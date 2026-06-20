@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>보고서 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy:    #1A2B4A;
+    --navy2:   #0F1E35;
+    --teal:    #0D9488;
+    --teal2:   #14B8A6;
+    --mint:    #CCFBF1;
+    --white:   #FFFFFF;
+    --off:     #F0F4F8;
+    --g1:      #64748B;
+    --g2:      #CBD5E1;
+    --g3:      #E2E8F0;
+    --dark:    #0F172A;
+    --red:     #EF4444;
+    --amber:   #F59E0B;
+    --green:   #22C55E;
+    --card-bg: #1E3050;
+    --sidebar: #152238;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif; background: var(--navy2); color: var(--white); min-height: 100vh; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 240px; background: var(--sidebar); padding: 24px 0; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.06); }
+  .main { flex: 1; overflow-y: auto; }
+
+  /* ── SIDEBAR ── */
+  .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-logo h1 { font-size: 15px; font-weight: 700; color: var(--teal2); letter-spacing: 0.3px; }
+  .sidebar-logo p { font-size: 11px; color: var(--g1); margin-top: 3px; }
+  .sidebar-section { padding: 16px 20px 8px; font-size: 10px; font-weight: 700; color: var(--g1); letter-spacing: 1.2px; text-transform: uppercase; }
+  .folder-tree { padding: 0 12px; }
+  .folder-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--g2); transition: all .15s; position: relative; }
+  .folder-item:hover { background: rgba(13,148,136,.12); color: var(--teal2); }
+  .folder-item.active { background: rgba(13,148,136,.18); color: var(--teal2); font-weight: 600; }
+  .folder-item .icon { font-size: 14px; width: 18px; text-align: center; }
+  .folder-item .count { margin-left: auto; background: rgba(255,255,255,.1); border-radius: 10px; padding: 1px 7px; font-size: 10px; }
+  .folder-children { padding-left: 16px; }
+  .sidebar-bottom { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); }
+  .btn-new { width: 100%; background: var(--teal); color: #fff; border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .btn-new:hover { background: var(--teal2); }
+
+  /* ── TOP BAR ── */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid rgba(255,255,255,.06); background: var(--navy2); position: sticky; top: 0; z-index: 10; }
+  .topbar-left h2 { font-size: 18px; font-weight: 700; }
+  .topbar-left p { font-size: 12px; color: var(--g1); margin-top: 2px; }
+  .topbar-right { display: flex; gap: 10px; }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .btn-ghost { background: rgba(255,255,255,.07); color: var(--g2); border: 1px solid rgba(255,255,255,.1); }
+  .btn-ghost:hover { background: rgba(255,255,255,.12); color: #fff; }
+  .btn-primary { background: var(--teal); color: #fff; }
+  .btn-primary:hover { background: var(--teal2); }
+
+  /* ── HOME / LIBRARY ── */
+  .page { padding: 28px; display: none; }
+  .page.active { display: block; }
+  .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+  .report-card { background: var(--card-bg); border-radius: 12px; padding: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,.07); transition: all .18s; position: relative; overflow: hidden; }
+  .report-card:hover { border-color: var(--teal); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .report-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--teal); }
+  .report-card .rc-month { font-size: 11px; color: var(--teal2); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .report-card .rc-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  .report-card .rc-kpis { display: flex; gap: 16px; flex-wrap: wrap; }
+  .rc-kpi { display: flex; flex-direction: column; }
+  .rc-kpi .val { font-size: 20px; font-weight: 800; color: var(--teal2); }
+  .rc-kpi .lbl { font-size: 10px; color: var(--g1); margin-top: 1px; }
+  .report-card .rc-date { margin-top: 14px; font-size: 11px; color: var(--g1); }
+  .report-card .rc-actions { position: absolute; top: 16px; right: 16px; display: flex; gap: 6px; opacity: 0; transition: opacity .15s; }
+  .report-card:hover .rc-actions { opacity: 1; }
+  .rc-btn { background: rgba(0,0,0,.4); border: none; color: #fff; border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+  .rc-btn:hover { background: var(--red); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--g1); }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 16px; color: var(--g2); margin-bottom: 8px; }
+
+  /* ── QUICK NAV TABS ── */
+  .qnav { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .qnav-tab { padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,.1); color: var(--g2); background: transparent; transition: all .15s; }
+  .qnav-tab:hover { border-color: var(--teal); color: var(--teal2); }
+  .qnav-tab.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+  /* ── DASHBOARD BLOCKS ── */
+  .dashboard-header { margin-bottom: 24px; }
+  .dashboard-header h2 { font-size: 22px; font-weight: 800; }
+  .dashboard-header p { font-size: 13px; color: var(--g1); margin-top: 4px; }
+  .db-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--g1); cursor: pointer; margin-bottom: 16px; }
+  .db-back:hover { color: var(--teal2); }
+  .blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .block { background: var(--card-bg); border-radius: 14px; padding: 20px; border: 1px solid rgba(255,255,255,.07); cursor: pointer; transition: all .18s; }
+  .block:hover { border-color: var(--teal); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+  .block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .block-title { font-size: 13px; font-weight: 700; color: var(--g2); letter-spacing: 0.3px; }
+  .block-expand { font-size: 11px; color: var(--teal); opacity: 0; transition: opacity .15s; }
+  .block:hover .block-expand { opacity: 1; }
+  .block.full-width { grid-column: 1 / -1; }
+
+  /* ── TAB VIEWS (summary / detail) ── */
+  .tab-view { display: none; }
+  .tab-view.active { display: block; }
+  .detail-card { background: var(--card-bg); border-radius: 14px; padding: 28px; border: 1px solid rgba(255,255,255,.07); }
+  .detail-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+  .detail-sub { font-size: 13px; font-weight: 700; color: var(--g2); margin-bottom: 12px; text-align: center; }
+  .detail-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 800px) { .detail-2col { grid-template-columns: 1fr; } }
+  .delta-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .delta-row:last-child { border-bottom: none; }
+  .delta-name { width: 120px; font-size: 13px; color: var(--g2); }
+  .delta-track { flex: 1; height: 10px; background: rgba(255,255,255,.06); border-radius: 5px; overflow: hidden; }
+  .delta-fill { height: 100%; border-radius: 5px; }
+  .delta-val { width: 90px; text-align: right; font-size: 13px; font-weight: 700; }
+  .action-group { margin-bottom: 24px; }
+  .action-group-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+
+  /* KPI cards */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi-card { background: rgba(0,0,0,.2); border-radius: 10px; padding: 14px; }
+  .kpi-card .kv { font-size: 28px; font-weight: 800; line-height: 1; }
+  .kpi-card .kl { font-size: 11px; color: var(--g1); margin-top: 4px; }
+  .kpi-card .kd { font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .kd.up { color: var(--green); }
+  .kd.down { color: var(--red); }
+
+  /* Pipeline table */
+  .pipe-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .pipe-table th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--g1); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .pipe-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .pipe-table tr:last-child td { border-bottom: none; }
+  .stage-bar { height: 6px; border-radius: 3px; background: var(--teal); margin-top: 4px; }
+
+  /* Chart containers */
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* Action plan */
+  .action-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .action-table th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--g1); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .action-table td { padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge-high { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+  .badge-mid  { background: rgba(245,158,11,.15); color: var(--amber); border: 1px solid rgba(245,158,11,.3); }
+  .badge-low  { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+
+  /* ── MODAL (focus view) ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card-bg); border-radius: 16px; width: 100%; max-width: 860px; max-height: 90vh; overflow-y: auto; padding: 28px; border: 1px solid rgba(255,255,255,.1); }
+  .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-top h3 { font-size: 18px; font-weight: 800; }
+  .modal-close { background: rgba(255,255,255,.1); border: none; color: #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
+  .modal-close:hover { background: var(--red); }
+
+  /* ── IMPORT MODAL ── */
+  .import-section { margin-bottom: 24px; }
+  .import-section h4 { font-size: 14px; font-weight: 700; color: var(--teal2); margin-bottom: 12px; }
+  .mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .mode-tab { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: transparent; color: var(--g2); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition: all .15s; }
+  .mode-tab.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .import-panel { display: none; }
+  .import-panel.active { display: block; }
+  label.field-label { display: block; font-size: 12px; color: var(--g1); margin-bottom: 6px; font-weight: 600; }
+  input[type=text], input[type=file], select, textarea {
+    width: 100%; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.1);
+    color: #fff; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px;
+    font-family: inherit; outline: none; transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--teal); }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--navy2); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .parse-result { background: rgba(13,148,136,.1); border: 1px solid rgba(13,148,136,.3); border-radius: 10px; padding: 14px; margin-bottom: 16px; font-size: 13px; line-height: 1.7; }
+  .parse-result h5 { font-size: 12px; color: var(--teal2); font-weight: 700; margin-bottom: 8px; }
+  .warn-box { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; font-size: 12px; color: var(--amber); margin-bottom: 14px; }
+  .kpi-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi-input-group { background: rgba(0,0,0,.2); border-radius: 8px; padding: 12px; }
+  .kpi-input-group label { font-size: 11px; color: var(--teal2); font-weight: 700; display: block; margin-bottom: 6px; }
+  .kpi-input-group input { margin-bottom: 6px; }
+
+  /* ── FOLDER MANAGE ── */
+  .folder-manage { display: flex; gap: 8px; margin-top: 16px; }
+  .folder-manage input { flex: 1; margin-bottom: 0; }
+
+  /* ── STATUS INDICATOR ── */
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.green { background: var(--green); }
+  .status-dot.red { background: var(--red); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { margin-top: 8px; }
+  .progress-bar-bg { background: rgba(255,255,255,.1); border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 4px; background: var(--teal); transition: width .4s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { width: 200px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .blocks-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── FIREBASE STATUS ── */
+  .firebase-status { font-size: 11px; padding: 6px 12px; border-radius: 6px; margin: 0 20px 12px; }
+  .firebase-status.ok { background: rgba(34,197,94,.1); color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+  .firebase-status.err { background: rgba(239,68,68,.1); color: var(--red); border: 1px solid rgba(239,68,68,.2); }
+  .firebase-status.warn { background: rgba(245,158,11,.1); color: var(--amber); border: 1px solid rgba(245,158,11,.2); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📊 보고서 허브</h1>
+      <p>BD 성과 대시보드</p>
+    </div>
+    <div id="firebaseStatus" class="firebase-status warn">⚙ Firebase 미연결 (로컬 모드)</div>
+    <div class="sidebar-section">라이브러리</div>
+    <div class="folder-tree" id="folderTree"></div>
+    <div class="sidebar-bottom">
+      <button class="btn-new" onclick="openImport()">+ 보고서 추가</button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2 id="topbarTitle">전체 보고서</h2>
+        <p id="topbarSub">보고서를 클릭하면 대시보드로 이동합니다</p>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost" onclick="openFolderManager()">📁 폴더 관리</button>
+        <button class="btn btn-primary" onclick="openImport()">+ 보고서 추가</button>
+      </div>
+    </div>
+
+    <!-- PAGE: LIBRARY -->
+    <div class="page active" id="pageLibrary">
+      <div id="reportGrid" class="report-grid"></div>
+    </div>
+
+    <!-- PAGE: DASHBOARD -->
+    <div class="page" id="pageDashboard">
+      <span class="db-back" onclick="goHome()">← 목록으로</span>
+      <div class="dashboard-header">
+        <h2 id="dbTitle"></h2>
+        <p id="dbSub"></p>
+      </div>
+      <!-- Quick Nav -->
+      <div class="qnav">
+        <button class="qnav-tab active" onclick="switchTab('summary',this)">📋 요약</button>
+        <button class="qnav-tab" onclick="switchTab('kpi',this)">📈 KPI</button>
+        <button class="qnav-tab" onclick="switchTab('pipe',this)">🔀 파이프라인</button>
+        <button class="qnav-tab" onclick="switchTab('trend',this)">📉 트렌드</button>
+        <button class="qnav-tab" onclick="switchTab('action',this)">✅ 액션플랜</button>
+      </div>
+
+      <!-- ════ SUMMARY VIEW ════ -->
+      <div class="tab-view active" id="viewSummary">
+        <div class="blocks-grid">
+          <!-- KPI -->
+          <div class="block full-width" id="blockKPI" onclick="switchTabByName('kpi')">
+            <div class="block-header"><span class="block-title">📈 핵심 KPI</span><span class="block-expand">상세 보기 →</span></div>
+            <div class="kpi-grid" id="kpiGrid"></div>
+          </div>
+          <!-- Pipeline -->
+          <div class="block" id="blockPipe" onclick="switchTabByName('pipe')">
+            <div class="block-header"><span class="block-title">🔀 파이프라인 현황</span><span class="block-expand">상세 보기 →</span></div>
+            <table class="pipe-table" id="pipeTable">
+              <thead><tr><th>단계</th><th>건수</th><th>금액(백만)</th></tr></thead>
+              <tbody id="pipeTbody"></tbody>
+            </table>
+          </div>
+          <!-- Trend -->
+          <div class="block" id="blockTrend" onclick="switchTabByName('trend')">
+            <div class="block-header"><span class="block-title">📉 월별 트렌드</span><span class="block-expand">상세 보기 →</span></div>
+            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+          </div>
+          <!-- Action Plan -->
+          <div class="block full-width" id="blockAction" onclick="switchTabByName('action')">
+            <div class="block-header"><span class="block-title">✅ 액션플랜</span><span class="block-expand">상세 보기 →</span></div>
+            <table class="action-table">
+              <thead><tr><th>#</th><th>과제</th><th>담당</th><th>기한</th><th>우선순위</th></tr></thead>
+              <tbody id="actionTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ KPI DETAIL ════ -->
+      <div class="tab-view" id="viewKpi">
+        <div class="detail-card">
+          <h3 class="detail-title">📈 핵심 KPI 상세</h3>
+          <div class="kpi-grid" id="kpiGridDetail" style="margin-bottom:24px"></div>
+          <div id="kpiDeltaList"></div>
+        </div>
+      </div>
+
+      <!-- ════ PIPELINE DETAIL ════ -->
+      <div class="tab-view" id="viewPipe">
+        <div class="detail-card">
+          <h3 class="detail-title">🔀 파이프라인 상세</h3>
+          <div class="detail-2col">
+            <div>
+              <table class="pipe-table" id="pipeTableDetail">
+                <thead><tr><th>단계</th><th>건수</th><th>금액(백만)</th><th>비율</th></tr></thead>
+                <tbody id="pipeTbodyDetail"></tbody>
+              </table>
+            </div>
+            <div class="chart-wrap" style="height:320px"><canvas id="pipeChartDetail"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ TREND DETAIL ════ -->
+      <div class="tab-view" id="viewTrend">
+        <div class="detail-card">
+          <h3 class="detail-title">📉 트렌드 상세</h3>
+          <div class="detail-2col">
+            <div class="chart-wrap" style="height:340px"><canvas id="trendChartDetail"></canvas></div>
+            <div>
+              <h4 class="detail-sub">채널별 비중</h4>
+              <div class="chart-wrap" style="height:280px"><canvas id="channelChartDetail"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ ACTION DETAIL ════ -->
+      <div class="tab-view" id="viewAction">
+        <div class="detail-card">
+          <h3 class="detail-title">✅ 액션플랜 상세</h3>
+          <div id="actionGrouped"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- (모달 미사용 — 탭 상세로 대체) -->
+<div style="display:none">
+  <div id="kpiGridModal"></div><div id="pipeTbodyModal"></div>
+  <div id="trendChartModal"></div><div id="channelChartModal"></div>
+  <div id="pipeChartModal"></div><div id="actionTbodyModal"></div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-top"><h3>+ 보고서 추가</h3><button class="modal-close" onclick="closeModal('modalImport')">✕</button></div>
+
+    <div class="import-section">
+      <div class="field-row">
+        <div>
+          <label class="field-label">보고서 제목</label>
+          <input type="text" id="iTitle" placeholder="예: 5월 BD 성과 보고서"/>
+        </div>
+        <div>
+          <label class="field-label">월 (기간)</label>
+          <input type="text" id="iPeriod" placeholder="예: 2026년 5월"/>
+        </div>
+      </div>
+      <label class="field-label">폴더</label>
+      <select id="iFolder"></select>
+    </div>
+
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="switchMode('pptx')">📎 PPT 파일 파싱</button>
+      <button class="mode-tab" onclick="switchMode('drive')">🔗 구글 드라이브 링크</button>
+      <button class="mode-tab" onclick="switchMode('manual')">✏️ 직접 입력</button>
+    </div>
+
+    <!-- Panel: PPTX -->
+    <div class="import-panel active" id="panelPptx">
+      <label class="field-label">PPT 파일 선택 (.pptx)</label>
+      <input type="file" id="pptxFile" accept=".pptx"/>
+      <div class="warn-box">⚠ PPT 안의 텍스트·숫자를 자동 파싱합니다. 이미지로만 된 슬라이드는 인식이 어려울 수 있어요. 그 경우 직접 입력 모드로 전환하세요.</div>
+      <button class="btn btn-primary" style="width:100%" onclick="parsePptx()">파싱 시작</button>
+      <div id="pptxParseResult" style="margin-top:14px;display:none"></div>
+    </div>
+
+    <!-- Panel: Drive -->
+    <div class="import-panel" id="panelDrive">
+      <label class="field-label">구글 드라이브 공유 링크</label>
+      <input type="text" id="driveLink" placeholder="https://drive.google.com/file/d/..."/>
+      <div class="warn-box">⚠ 파일 공유 설정이 "링크가 있는 모든 사용자"로 되어 있어야 합니다. 드라이브 → 파일 우클릭 → 공유 → 링크 복사.</div>
+      <button class="btn btn-primary" style="width:100%" onclick="parseDriveLink()">불러오기</button>
+      <div id="driveParseResult" style="margin-top:14px;display:none"></div>
+    </div>
+
+    <!-- Panel: Manual -->
+    <div class="import-panel" id="panelManual">
+      <h4 style="font-size:13px;color:var(--teal2);margin-bottom:12px">📈 KPI</h4>
+      <div class="kpi-inputs">
+        <div class="kpi-input-group">
+          <label>KPI 1 항목명</label>
+          <input type="text" id="m_k1n" placeholder="예: 검토 딜 수"/>
+          <label>값</label><input type="text" id="m_k1v" placeholder="예: 34건"/>
+          <label>전월 대비</label><input type="text" id="m_k1d" placeholder="예: ▲6건"/>
+        </div>
+        <div class="kpi-input-group">
+          <label>KPI 2 항목명</label>
+          <input type="text" id="m_k2n" placeholder="예: 신규 계약"/>
+          <label>값</label><input type="text" id="m_k2v" placeholder="예: 7건"/>
+          <label>전월 대비</label><input type="text" id="m_k2d" placeholder="예: ▲2건"/>
+        </div>
+        <div class="kpi-input-group">
+          <label>KPI 3 항목명</label>
+          <input type="text" id="m_k3n" placeholder="예: 계약 금액"/>
+          <label>값</label><input type="text" id="m_k3v" placeholder="예: 2.4억"/>
+          <label>전월 대비</label><input type="text" id="m_k3d" placeholder="예: ▲18%"/>
+        </div>
+        <div class="kpi-input-group">
+          <label>KPI 4 항목명</label>
+          <input type="text" id="m_k4n" placeholder="예: 전환율"/>
+          <label>값</label><input type="text" id="m_k4v" placeholder="예: 20.6%"/>
+          <label>전월 대비</label><input type="text" id="m_k4d" placeholder="예: ▼1.2%p"/>
+        </div>
+      </div>
+
+      <h4 style="font-size:13px;color:var(--teal2);margin:16px 0 12px">🔀 파이프라인 (단계별, 쉼표 구분)</h4>
+      <label class="field-label">단계명 (쉼표 구분)</label>
+      <input type="text" id="m_stages" placeholder="리드 발굴, 초기 미팅, 제안서 발송, 협상 중, 계약 완료"/>
+      <label class="field-label">건수 (쉼표 구분)</label>
+      <input type="text" id="m_counts" placeholder="12, 8, 7, 5, 7"/>
+      <label class="field-label">금액-백만원 (쉼표 구분)</label>
+      <input type="text" id="m_amounts" placeholder="580, 420, 510, 390, 240"/>
+
+      <h4 style="font-size:13px;color:var(--teal2);margin:16px 0 12px">📉 트렌드 (최근 월별, 쉼표 구분)</h4>
+      <label class="field-label">월 라벨</label>
+      <input type="text" id="m_months" placeholder="1월, 2월, 3월, 4월, 5월"/>
+      <label class="field-label">계약 건수</label>
+      <input type="text" id="m_tCounts" placeholder="3, 4, 5, 5, 7"/>
+      <label class="field-label">계약 금액(백만)</label>
+      <input type="text" id="m_tAmounts" placeholder="95, 130, 170, 203, 240"/>
+
+      <h4 style="font-size:13px;color:var(--teal2);margin:16px 0 12px">✅ 액션플랜 (줄바꿈으로 구분, 형식: 과제|담당|기한|High/Mid/Low)</h4>
+      <textarea id="m_actions" placeholder="협상 중 5건 계약 클로징 집중 관리|김팀장|6/13|High&#10;신규 리드 15건 추가 발굴|이과장|6/20|High&#10;제안서 템플릿 표준화|박대리|6/27|Mid"></textarea>
+    </div>
+
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modalImport')">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveReport()">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOLDER MANAGER -->
+<div class="modal-overlay" id="modalFolder">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-top"><h3>📁 폴더 관리</h3><button class="modal-close" onclick="closeModal('modalFolder')">✕</button></div>
+    <div id="folderList" style="margin-bottom:16px"></div>
+    <div class="folder-manage">
+      <input type="text" id="newFolderName" placeholder="새 폴더 이름" style="margin-bottom:0"/>
+      <button class="btn btn-primary" onclick="addFolder()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE CONFIG MODAL -->
+<div class="modal-overlay" id="modalFirebase">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-top"><h3>🔥 Firebase 연결</h3><button class="modal-close" onclick="closeModal('modalFirebase')">✕</button></div>
+    <p style="font-size:13px;color:var(--g1);margin-bottom:16px;line-height:1.7">Firebase를 연결하면 어느 기기에서든 보고서를 볼 수 있습니다. <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--teal2)">Firebase 콘솔</a>에서 프로젝트를 만들고 아래 설정값을 붙여넣으세요.</p>
+    <label class="field-label">API Key</label><input type="text" id="fb_apiKey" placeholder="AIza..."/>
+    <label class="field-label">Auth Domain</label><input type="text" id="fb_authDomain" placeholder="your-app.firebaseapp.com"/>
+    <label class="field-label">Project ID</label><input type="text" id="fb_projectId" placeholder="your-app"/>
+    <label class="field-label">App ID</label><input type="text" id="fb_appId" placeholder="1:xxx:web:xxx"/>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="connectFirebase()">연결하기</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let db = {
+  folders: ['2026년', '2026년/1분기', '2026년/2분기'],
+  reports: [],
+  currentFolder: null,
+  currentReport: null,
+};
+let firebaseDB = null;
+let charts = {};
+let currentMode = 'pptx';
+
+// ── STORAGE (localStorage fallback)
+function saveLocal() { localStorage.setItem('reportHub_db', JSON.stringify(db)); }
+function loadLocal() {
+  const s = localStorage.getItem('reportHub_db');
+  if (s) { const d = JSON.parse(s); db.folders = d.folders || db.folders; db.reports = d.reports || []; }
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadLocal();
+  checkFirebase();
+  renderSidebar();
+  renderLibrary();
+});
+
+// ══════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════
+function checkFirebase() {
+  const cfg = localStorage.getItem('fbConfig');
+  if (cfg) {
+    try { initFirebaseFromConfig(JSON.parse(cfg)); }
+    catch(e) { setFbStatus('err', '⚠ Firebase 연결 오류'); }
+  } else {
+    setFbStatus('warn', '⚙ 로컬 저장 모드 · <span style="cursor:pointer;text-decoration:underline" onclick="openModal(\'modalFirebase\')">Firebase 연결하기</span>');
+  }
+}
+function setFbStatus(type, msg) {
+  const el = document.getElementById('firebaseStatus');
+  el.className = 'firebase-status ' + type;
+  el.innerHTML = msg;
+}
+function initFirebaseFromConfig(cfg) {
+  // Dynamic import of Firebase
+  const script1 = document.createElement('script');
+  script1.type = 'module';
+  script1.textContent = `
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    const app = initializeApp(${JSON.stringify(cfg)});
+    const db = getFirestore(app);
+    window._fbDB = db;
+    window._fbFns = { collection, getDocs, addDoc, deleteDoc, doc, setDoc };
+    window.dispatchEvent(new Event('firebaseReady'));
+  `;
+  document.head.appendChild(script1);
+  window.addEventListener('firebaseReady', async () => {
+    setFbStatus('ok', '✓ Firebase 연결됨 · 클라우드 저장 중');
+    await syncFromFirebase();
+  });
+}
+async function syncFromFirebase() {
+  if (!window._fbDB) return;
+  try {
+    const { collection, getDocs } = window._fbFns;
+    const snap = await getDocs(collection(window._fbDB, 'reports'));
+    const fbReports = [];
+    snap.forEach(d => fbReports.push({ id: d.id, ...d.data() }));
+    db.reports = fbReports;
+    saveLocal();
+    renderSidebar();
+    renderLibrary();
+  } catch(e) { console.warn('Firebase sync error', e); }
+}
+async function saveToFirebase(report) {
+  if (!window._fbDB) return;
+  try {
+    const { collection, addDoc } = window._fbFns;
+    const docRef = await addDoc(collection(window._fbDB, 'reports'), report);
+    report.id = docRef.id;
+  } catch(e) { console.warn('Firebase save error', e); }
+}
+async function deleteFromFirebase(id) {
+  if (!window._fbDB) return;
+  try {
+    const { doc, deleteDoc } = window._fbFns;
+    await deleteDoc(doc(window._fbDB, 'reports', id));
+  } catch(e) { console.warn('Firebase delete error', e); }
+}
+function connectFirebase() {
+  const cfg = {
+    apiKey: document.getElementById('fb_apiKey').value.trim(),
+    authDomain: document.getElementById('fb_authDomain').value.trim(),
+    projectId: document.getElementById('fb_projectId').value.trim(),
+    appId: document.getElementById('fb_appId').value.trim(),
+  };
+  if (!cfg.apiKey || !cfg.projectId) { alert('API Key와 Project ID는 필수입니다.'); return; }
+  localStorage.setItem('fbConfig', JSON.stringify(cfg));
+  closeModal('modalFirebase');
+  initFirebaseFromConfig(cfg);
+}
+
+// ══════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════
+function renderSidebar() {
+  const tree = document.getElementById('folderTree');
+  const counts = {};
+  db.reports.forEach(r => { counts[r.folder] = (counts[r.folder]||0)+1; });
+
+  let html = `<div class="folder-item ${!db.currentFolder?'active':''}" onclick="filterFolder(null)">
+    <span class="icon">📋</span> 전체 보고서 <span class="count">${db.reports.length}</span></div>`;
+
+  db.folders.forEach(f => {
+    const cnt = counts[f]||0;
+    html += `<div class="folder-item ${db.currentFolder===f?'active':''}" onclick="filterFolder('${f}')">
+      <span class="icon">📁</span> ${f} <span class="count">${cnt}</span></div>`;
+  });
+  tree.innerHTML = html;
+
+  // Update folder select in import modal
+  const sel = document.getElementById('iFolder');
+  if (sel) {
+    sel.innerHTML = db.folders.map(f=>`<option value="${f}">${f}</option>`).join('');
+  }
+}
+
+function filterFolder(folder) {
+  db.currentFolder = folder;
+  document.getElementById('topbarTitle').textContent = folder || '전체 보고서';
+  renderSidebar();
+  renderLibrary();
+}
+
+// ══════════════════════════════════════════
+// LIBRARY
+// ══════════════════════════════════════════
+function renderLibrary() {
+  showPage('pageLibrary');
+  const grid = document.getElementById('reportGrid');
+  const reports = db.currentFolder
+    ? db.reports.filter(r => r.folder === db.currentFolder)
+    : db.reports;
+
+  if (!reports.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="emoji">📭</div>
+      <h3>보고서가 없습니다</h3>
+      <p>상단 "+ 보고서 추가" 버튼으로 첫 보고서를 추가하세요.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = reports.map(r => {
+    const k1 = r.kpis?.[0];
+    const k2 = r.kpis?.[1];
+    return `<div class="report-card" onclick="openDashboard('${r.id}')">
+      <div class="rc-actions">
+        <button class="rc-btn" onclick="event.stopPropagation();deleteReport('${r.id}')">🗑</button>
+      </div>
+      <div class="rc-month">${r.folder} · ${r.period||''}</div>
+      <div class="rc-title">${r.title}</div>
+      <div class="rc-kpis">
+        ${k1?`<div class="rc-kpi"><div class="val">${k1.value}</div><div class="lbl">${k1.name}</div></div>`:''}
+        ${k2?`<div class="rc-kpi"><div class="val">${k2.value}</div><div class="lbl">${k2.name}</div></div>`:''}
+      </div>
+      <div class="rc-date">등록일 ${r.createdAt||'-'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function openDashboard(id) {
+  const r = db.reports.find(x => x.id === id);
+  if (!r) return;
+  db.currentReport = r;
+  showPage('pageDashboard');
+  document.getElementById('dbTitle').textContent = r.title;
+  document.getElementById('dbSub').textContent = `${r.folder} · ${r.period||''} · 등록일 ${r.createdAt||''}`;
+
+  renderKPI(r.kpis||[], 'kpiGrid');
+  renderPipeTable(r.pipeline||[], 'pipeTbody');
+  renderActionTable(r.actions||[], 'actionTbody');
+  renderTrendChart('trendChart', r.trend||{}, false);
+
+  // reset to summary tab
+  document.querySelectorAll('.qnav-tab').forEach((t,i) => t.classList.toggle('active', i === 0));
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  document.getElementById('viewSummary').classList.add('active');
+}
+
+function goHome() { showPage('pageLibrary'); destroyCharts(); }
+
+function renderKPI(kpis, targetId) {
+  const el = document.getElementById(targetId);
+  el.innerHTML = kpis.map(k => {
+    const isUp = k.delta && (k.delta.includes('▲') || k.delta.includes('+'));
+    const isDown = k.delta && (k.delta.includes('▼') || k.delta.includes('-'));
+    const cls = isUp ? 'up' : isDown ? 'down' : '';
+    return `<div class="kpi-card">
+      <div class="kv" style="color:${k.color||'#14B8A6'}">${k.value}</div>
+      <div class="kl">${k.name}</div>
+      ${k.delta?`<div class="kd ${cls}">${k.delta}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderPipeTable(pipeline, tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  const maxCnt = Math.max(...pipeline.map(p=>p.count||0), 1);
+  tbody.innerHTML = pipeline.map(p => {
+    const pct = Math.round((p.count/maxCnt)*100);
+    return `<tr>
+      <td>${p.stage}</td>
+      <td style="color:var(--teal2);font-weight:700">${p.count}</td>
+      <td>${p.amount||'-'}</td>
+      ${tbodyId.includes('Modal') ? `<td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div></td>`:''}
+    </tr>`;
+  }).join('');
+}
+
+function renderActionTable(actions, tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = actions.map((a,i) => {
+    const bcls = a.priority==='High'?'badge-high':a.priority==='Mid'?'badge-mid':'badge-low';
+    return `<tr>
+      <td style="color:var(--teal);font-weight:700">${String(i+1).padStart(2,'0')}</td>
+      <td>${a.task}</td><td style="color:var(--g1)">${a.owner||''}</td>
+      <td style="color:var(--g1)">${a.due||''}</td>
+      <td><span class="badge ${bcls}">${a.priority}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTrendChart(canvasId, trend, large) {
+  if (charts[canvasId]) { charts[canvasId].destroy(); }
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !trend.months) return;
+  charts[canvasId] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: trend.months,
+      datasets: [
+        { label: '계약 건수', data: trend.counts||[], borderColor:'#14B8A6', backgroundColor:'rgba(20,184,166,.1)', tension:.4, fill:true, yAxisID:'y' },
+        { label: '금액(백만)', data: trend.amounts||[], borderColor:'#1A2B4A', backgroundColor:'rgba(26,43,74,.1)', tension:.4, fill:false, yAxisID:'y1' },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#94A3B8', font:{ size:11 }}}},
+      scales:{
+        x:{ ticks:{color:'#64748B'}, grid:{color:'rgba(255,255,255,.05)'} },
+        y:{ ticks:{color:'#64748B'}, grid:{color:'rgba(255,255,255,.05)'}, position:'left' },
+        y1:{ ticks:{color:'#64748B'}, grid:{display:false}, position:'right' }
+      }
+    }
+  });
+}
+
+function renderPipeChart(canvasId, pipeline) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  charts[canvasId] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: pipeline.map(p=>p.stage),
+      datasets: [{ label:'건수', data: pipeline.map(p=>p.count), backgroundColor:'rgba(13,148,136,.7)', borderRadius:4 }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }},
+      scales:{ x:{ticks:{color:'#64748B'},grid:{color:'rgba(255,255,255,.05)'}}, y:{ticks:{color:'#CBD5E1'},grid:{display:false}} }
+    }
+  });
+}
+
+function renderChannelChart(canvasId, channels) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !channels) return;
+  charts[canvasId] = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: channels.map(c=>c.name),
+      datasets: [{ data: channels.map(c=>c.value), backgroundColor:['#0D9488','#1A2B4A','#7C3AED','#F59E0B'], borderWidth:0 }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ color:'#94A3B8', font:{ size:11 }, padding:12 }}}
+    }
+  });
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+}
+
+// ══════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  const r = db.currentReport;
+  if (id === 'modalKPI' && r) renderKPI(r.kpis||[], 'kpiGridModal');
+  if (id === 'modalPipe' && r) {
+    renderPipeTable(r.pipeline||[], 'pipeTbodyModal');
+    setTimeout(() => renderPipeChart('pipeChartModal', r.pipeline||[]), 50);
+  }
+  if (id === 'modalTrend' && r) {
+    setTimeout(() => {
+      renderTrendChart('trendChartModal', r.trend||{}, true);
+      renderChannelChart('channelChartModal', r.channels||null);
+    }, 50);
+  }
+  if (id === 'modalAction' && r) renderActionTable(r.actions||[], 'actionTbodyModal');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ══════════════════════════════════════════
+// IMPORT
+// ══════════════════════════════════════════
+function openImport() {
+  renderSidebar(); // refresh folder select
+  openModal('modalImport');
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['pptx','drive','manual'][i] === mode);
+  });
+  document.querySelectorAll('.import-panel').forEach((p,i) => {
+    p.classList.toggle('active', ['panelPptx','panelDrive','panelManual'][i] === 'panel'+mode.charAt(0).toUpperCase()+mode.slice(1));
+  });
+}
+
+// ── PPTX Parser
+async function parsePptx() {
+  const file = document.getElementById('pptxFile').files[0];
+  if (!file) { alert('.pptx 파일을 선택하세요.'); return; }
+
+  const resultEl = document.getElementById('pptxParseResult');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div class="parse-result"><h5>⏳ 파싱 중...</h5></div>';
+
+  try {
+    const parsed = await extractPptxText(file);
+    const data = inferDataFromText(parsed);
+    populateFromData(data);
+    resultEl.innerHTML = `<div class="parse-result">
+      <h5>✅ 파싱 완료 — 아래 내용을 확인하고 저장하세요</h5>
+      KPI ${data.kpis.length}개 · 파이프라인 ${data.pipeline.length}단계 · 액션 ${data.actions.length}건 감지됨
+    </div>`;
+    switchMode('manual');
+  } catch(e) {
+    resultEl.innerHTML = `<div class="warn-box">⚠ 파싱 실패: ${e.message}<br>직접 입력 모드로 전환하세요.</div>`;
+    switchMode('manual');
+  }
+}
+
+async function extractPptxText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const arrayBuffer = e.target.result;
+        // Use JSZip-like approach via raw ZIP reading
+        // pptx is a zip — extract slide XML texts
+        const uint8 = new Uint8Array(arrayBuffer);
+        const text = await readPptxAsText(uint8);
+        resolve(text);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function readPptxAsText(uint8) {
+  // Dynamic import JSZip via CDN
+  if (!window.JSZip) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  }
+  const zip = await window.JSZip.loadAsync(uint8);
+  let allText = '';
+  const slideFiles = Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/)).sort();
+  for (const sf of slideFiles) {
+    const xml = await zip.files[sf].async('string');
+    // Extract text from <a:t> tags
+    const matches = xml.match(/<a:t[^>]*>([^<]+)<\/a:t>/g)||[];
+    const texts = matches.map(m => m.replace(/<[^>]+>/g,'').trim()).filter(Boolean);
+    allText += texts.join('\n') + '\n---SLIDE---\n';
+  }
+  return allText;
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+function inferDataFromText(rawText) {
+  const lines = rawText.split('\n').map(l=>l.trim()).filter(Boolean);
+  const data = { kpis: [], pipeline: [], trend: {}, actions: [], channels: [] };
+
+  // Simple heuristics — works well with standardized template
+  const numRe = /[\d,]+(\.\d+)?[억만건%]/;
+  const kpiColors = ['#14B8A6','#2563EB','#7C3AED','#EF4444'];
+  let kpiIdx = 0;
+
+  lines.forEach((line, i) => {
+    // KPI: lines that are short labels followed by a value
+    if (numRe.test(line) && line.length < 20 && kpiIdx < 4) {
+      const prevLine = lines[i-1]||'';
+      const deltaLine = lines[i+1]||'';
+      if (prevLine.length < 20 && !numRe.test(prevLine)) {
+        data.kpis.push({ name: prevLine||line, value: line, delta: numRe.test(deltaLine)?deltaLine:'', color: kpiColors[kpiIdx++] });
+      }
+    }
+    // Pipeline: lines with stage keywords
+    const stageKws = ['리드','미팅','제안','협상','계약','발굴','완료','검토'];
+    if (stageKws.some(k=>line.includes(k)) && /\d+/.test(line)) {
+      const nums = line.match(/\d+/g)||[];
+      data.pipeline.push({ stage: line.replace(/\d+/g,'').replace(/[건원만억]/g,'').trim(), count: parseInt(nums[0])||0, amount: nums[1]||'' });
+    }
+    // Actions: lines with | separator
+    if (line.includes('|')) {
+      const parts = line.split('|').map(s=>s.trim());
+      if (parts.length >= 2) {
+        data.actions.push({ task:parts[0], owner:parts[1]||'', due:parts[2]||'', priority:parts[3]||'Mid' });
+      }
+    }
+    // Trend months
+    if (/^\d+월$/.test(line)) {
+      if (!data.trend.months) data.trend.months = [];
+      data.trend.months.push(line);
+    }
+  });
+
+  return data;
+}
+
+function populateFromData(data) {
+  if (data.kpis[0]) {
+    document.getElementById('m_k1n').value = data.kpis[0].name||'';
+    document.getElementById('m_k1v').value = data.kpis[0].value||'';
+    document.getElementById('m_k1d').value = data.kpis[0].delta||'';
+  }
+  if (data.kpis[1]) {
+    document.getElementById('m_k2n').value = data.kpis[1].name||'';
+    document.getElementById('m_k2v').value = data.kpis[1].value||'';
+    document.getElementById('m_k2d').value = data.kpis[1].delta||'';
+  }
+  if (data.kpis[2]) {
+    document.getElementById('m_k3n').value = data.kpis[2].name||'';
+    document.getElementById('m_k3v').value = data.kpis[2].value||'';
+    document.getElementById('m_k3d').value = data.kpis[2].delta||'';
+  }
+  if (data.kpis[3]) {
+    document.getElementById('m_k4n').value = data.kpis[3].name||'';
+    document.getElementById('m_k4v').value = data.kpis[3].value||'';
+    document.getElementById('m_k4d').value = data.kpis[3].delta||'';
+  }
+  if (data.pipeline.length) {
+    document.getElementById('m_stages').value = data.pipeline.map(p=>p.stage).join(', ');
+    document.getElementById('m_counts').value = data.pipeline.map(p=>p.count).join(', ');
+    document.getElementById('m_amounts').value = data.pipeline.map(p=>p.amount).join(', ');
+  }
+  if (data.actions.length) {
+    document.getElementById('m_actions').value = data.actions.map(a=>`${a.task}|${a.owner}|${a.due}|${a.priority}`).join('\n');
+  }
+}
+
+// ── Drive Link
+async function parseDriveLink() {
+  const link = document.getElementById('driveLink').value.trim();
+  if (!link) { alert('링크를 입력하세요.'); return; }
+
+  const fileId = extractDriveFileId(link);
+  if (!fileId) { alert('올바른 구글 드라이브 링크가 아닙니다.'); return; }
+
+  const resultEl = document.getElementById('driveParseResult');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div class="parse-result"><h5>⏳ 불러오는 중...</h5></div>';
+
+  try {
+    // Direct download URL
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    const res = await fetch(downloadUrl);
+    if (!res.ok) throw new Error('파일을 가져올 수 없습니다. 공유 설정을 확인하세요.');
+    const blob = await res.blob();
+    const file = new File([blob], 'report.pptx');
+    const parsed = await extractPptxText(file);
+    const data = inferDataFromText(parsed);
+    populateFromData(data);
+    resultEl.innerHTML = `<div class="parse-result"><h5>✅ 불러오기 완료</h5>직접 입력 탭에서 내용을 확인 후 저장하세요.</div>`;
+    switchMode('manual');
+  } catch(e) {
+    resultEl.innerHTML = `<div class="warn-box">⚠ ${e.message}<br>파일 공유 설정: 링크가 있는 모든 사용자 → 뷰어</div>`;
+  }
+}
+
+function extractDriveFileId(url) {
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+// ── SAVE
+async function saveReport() {
+  const title = document.getElementById('iTitle').value.trim();
+  const period = document.getElementById('iPeriod').value.trim();
+  const folder = document.getElementById('iFolder').value;
+  if (!title) { alert('보고서 제목을 입력하세요.'); return; }
+
+  const kpis = [];
+  const kpiColors = ['#14B8A6','#2563EB','#7C3AED','#EF4444'];
+  [[1],[2],[3],[4]].forEach(([n]) => {
+    const name = document.getElementById(`m_k${n}n`).value.trim();
+    const value = document.getElementById(`m_k${n}v`).value.trim();
+    const delta = document.getElementById(`m_k${n}d`).value.trim();
+    if (name || value) kpis.push({ name, value, delta, color: kpiColors[n-1] });
+  });
+
+  const stages = (document.getElementById('m_stages').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const counts = (document.getElementById('m_counts').value||'').split(',').map(s=>parseInt(s.trim())||0);
+  const amounts = (document.getElementById('m_amounts').value||'').split(',').map(s=>s.trim());
+  const pipeline = stages.map((s,i) => ({ stage:s, count:counts[i]||0, amount:amounts[i]||'' }));
+
+  const months = (document.getElementById('m_months').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const tCounts = (document.getElementById('m_tCounts').value||'').split(',').map(s=>parseFloat(s)||0);
+  const tAmounts = (document.getElementById('m_tAmounts').value||'').split(',').map(s=>parseFloat(s)||0);
+  const trend = { months, counts: tCounts, amounts: tAmounts };
+
+  const actionLines = (document.getElementById('m_actions').value||'').split('\n').filter(Boolean);
+  const actions = actionLines.map(l => {
+    const p = l.split('|').map(s=>s.trim());
+    return { task:p[0]||'', owner:p[1]||'', due:p[2]||'', priority:p[3]||'Mid' };
+  });
+
+  const report = {
+    id: 'r_' + Date.now(),
+    title, period, folder,
+    kpis, pipeline, trend, actions,
+    createdAt: new Date().toLocaleDateString('ko-KR'),
+  };
+
+  await saveToFirebase(report);
+  db.reports.push(report);
+  saveLocal();
+  closeModal('modalImport');
+  resetImportForm();
+  renderSidebar();
+  renderLibrary();
+}
+
+function resetImportForm() {
+  ['iTitle','iPeriod','m_k1n','m_k1v','m_k1d','m_k2n','m_k2v','m_k2d',
+   'm_k3n','m_k3v','m_k3d','m_k4n','m_k4v','m_k4d',
+   'm_stages','m_counts','m_amounts','m_months','m_tCounts','m_tAmounts','m_actions',
+   'driveLink'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  switchMode('pptx');
+}
+
+// ── DELETE
+async function deleteReport(id) {
+  if (!confirm('이 보고서를 삭제할까요?')) return;
+  await deleteFromFirebase(id);
+  db.reports = db.reports.filter(r => r.id !== id);
+  saveLocal();
+  renderSidebar();
+  renderLibrary();
+}
+
+// ══════════════════════════════════════════
+// FOLDER MANAGER
+// ══════════════════════════════════════════
+function openFolderManager() {
+  renderFolderList();
+  openModal('modalFolder');
+}
+function renderFolderList() {
+  const el = document.getElementById('folderList');
+  el.innerHTML = db.folders.map((f,i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)">
+      <span style="flex:1;font-size:13px">📁 ${f}</span>
+      <button class="rc-btn" onclick="deleteFolder(${i})">삭제</button>
+    </div>`).join('');
+}
+function addFolder() {
+  const name = document.getElementById('newFolderName').value.trim();
+  if (!name) return;
+  if (!db.folders.includes(name)) { db.folders.push(name); saveLocal(); }
+  document.getElementById('newFolderName').value = '';
+  renderFolderList();
+  renderSidebar();
+}
+function deleteFolder(i) {
+  if (!confirm(`"${db.folders[i]}" 폴더를 삭제할까요? (보고서는 유지됩니다)`)) return;
+  db.folders.splice(i, 1);
+  saveLocal();
+  renderFolderList();
+  renderSidebar();
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(tabName, btn) {
+  document.querySelectorAll('.qnav-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const map = { summary:0, kpi:1, pipe:2, trend:3, action:4 };
+    document.querySelectorAll('.qnav-tab')[map[tabName]]?.classList.add('active');
+  }
+
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  const viewId = 'view' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+  document.getElementById(viewId)?.classList.add('active');
+
+  const r = db.currentReport;
+  if (!r) return;
+
+  // render detail content lazily
+  if (tabName === 'summary') {
+    setTimeout(() => renderTrendChart('trendChart', r.trend||{}, false), 60);
+  }
+  if (tabName === 'kpi') renderKpiDetail(r);
+  if (tabName === 'pipe') {
+    renderPipeTable(r.pipeline||[], 'pipeTbodyDetail');
+    setTimeout(() => renderPipeChart('pipeChartDetail', r.pipeline||[]), 60);
+  }
+  if (tabName === 'trend') {
+    setTimeout(() => {
+      renderTrendChart('trendChartDetail', r.trend||{}, true);
+      renderChannelChart('channelChartDetail', r.channels||null);
+    }, 60);
+  }
+  if (tabName === 'action') renderActionGrouped(r.actions||[]);
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function switchTabByName(tabName) {
+  const map = { summary:0, kpi:1, pipe:2, trend:3, action:4 };
+  const btn = document.querySelectorAll('.qnav-tab')[map[tabName]];
+  switchTab(tabName, btn);
+}
+
+// ── KPI detail: cards + delta bars
+function renderKpiDetail(r) {
+  renderKPI(r.kpis||[], 'kpiGridDetail');
+  const el = document.getElementById('kpiDeltaList');
+  const kpis = r.kpis || [];
+  el.innerHTML = '<h4 class="detail-sub" style="text-align:left;margin-top:8px">전월 대비 변화</h4>' +
+    kpis.map(k => {
+      const isUp = k.delta && (k.delta.includes('▲') || k.delta.includes('+'));
+      const isDown = k.delta && (k.delta.includes('▼') || k.delta.includes('-'));
+      const color = isUp ? '#22C55E' : isDown ? '#EF4444' : '#64748B';
+      const pct = isUp ? 70 : isDown ? 40 : 50;
+      return `<div class="delta-row">
+        <span class="delta-name">${k.name}</span>
+        <span class="delta-track"><span class="delta-fill" style="width:${pct}%;background:${color}"></span></span>
+        <span class="delta-val" style="color:${color}">${k.delta||'-'}</span>
+      </div>`;
+    }).join('');
+}
+
+// ── Action plan grouped by priority
+function renderActionGrouped(actions) {
+  const el = document.getElementById('actionGrouped');
+  const groups = { High: [], Mid: [], Low: [] };
+  actions.forEach(a => { (groups[a.priority] || groups.Mid).push(a); });
+
+  const cfg = {
+    High: { color: '#EF4444', label: '🔴 우선순위 High' },
+    Mid:  { color: '#F59E0B', label: '🟠 우선순위 Mid' },
+    Low:  { color: '#22C55E', label: '🟢 우선순위 Low' },
+  };
+
+  let html = '';
+  ['High','Mid','Low'].forEach(p => {
+    if (!groups[p].length) return;
+    html += `<div class="action-group">
+      <div class="action-group-title" style="color:${cfg[p].color}">${cfg[p].label} (${groups[p].length}건)</div>
+      <table class="action-table">
+        <thead><tr><th>과제</th><th>담당</th><th>기한</th></tr></thead>
+        <tbody>${groups[p].map(a=>`<tr>
+          <td>${a.task}</td><td style="color:var(--g1)">${a.owner||''}</td><td style="color:var(--g1)">${a.due||''}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  });
+  el.innerHTML = html || '<p style="color:var(--g1)">등록된 액션이 없습니다.</p>';
+}
+</script>
+</body>
+</html>
