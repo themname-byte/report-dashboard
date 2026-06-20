@@ -120,6 +120,36 @@
   .action-group { margin-bottom: 24px; }
   .action-group-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 
+  /* ── KPI dual delta (전월/전년) ── */
+  .kpi-card .kd-row { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+  .kpi-card .kd-item { font-size: 11px; display: flex; justify-content: space-between; }
+  .kd-item .kd-lbl { color: var(--g1); }
+  .kd-item .kd-up { color: var(--green); font-weight: 600; }
+  .kd-item .kd-down { color: var(--red); font-weight: 600; }
+  .kd-item .kd-flat { color: var(--g1); }
+
+  /* ── 신사업 공정 진행도 ── */
+  .proj-item { background: rgba(0,0,0,.2); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+  .proj-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .proj-name { font-size: 14px; font-weight: 700; }
+  .proj-stage { font-size: 11px; color: var(--g1); margin-left: 8px; background: rgba(255,255,255,.08); padding: 2px 8px; border-radius: 10px; }
+  .proj-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+  .proj-status.ok    { background: rgba(34,197,94,.15); color: var(--green); }
+  .proj-status.warn  { background: rgba(245,158,11,.15); color: var(--amber); }
+  .proj-status.delay { background: rgba(239,68,68,.15); color: var(--red); }
+  .proj-bar-bg { background: rgba(255,255,255,.08); border-radius: 6px; height: 12px; overflow: hidden; position: relative; }
+  .proj-bar-fill { height: 100%; border-radius: 6px; transition: width .5s; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+  .proj-pct { font-size: 10px; font-weight: 800; color: #fff; }
+  .proj-detail-card { background: rgba(0,0,0,.2); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .proj-stages-track { display: flex; align-items: center; gap: 0; margin-top: 16px; }
+  .proj-stage-node { flex: 1; text-align: center; position: relative; }
+  .proj-stage-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .proj-stage-dot.done { background: var(--teal); color: #fff; }
+  .proj-stage-dot.current { background: var(--amber); color: #fff; box-shadow: 0 0 0 4px rgba(245,158,11,.2); }
+  .proj-stage-dot.todo { background: rgba(255,255,255,.1); color: var(--g1); }
+  .proj-stage-label { font-size: 11px; color: var(--g2); }
+  .proj-stage-line { position: absolute; top: 14px; left: 50%; width: 100%; height: 2px; background: rgba(255,255,255,.1); z-index: -1; }
+
   /* KPI cards */
   .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .kpi-card { background: rgba(0,0,0,.2); border-radius: 10px; padding: 14px; }
@@ -264,6 +294,7 @@
         <button class="qnav-tab" onclick="switchTab('kpi',this)">📈 KPI</button>
         <button class="qnav-tab" onclick="switchTab('pipe',this)">🔀 파이프라인</button>
         <button class="qnav-tab" onclick="switchTab('trend',this)">📉 트렌드</button>
+        <button class="qnav-tab" onclick="switchTab('project',this)">🏗 신사업</button>
         <button class="qnav-tab" onclick="switchTab('action',this)">✅ 액션플랜</button>
       </div>
 
@@ -287,6 +318,11 @@
           <div class="block" id="blockTrend" onclick="switchTabByName('trend')">
             <div class="block-header"><span class="block-title">📉 월별 트렌드</span><span class="block-expand">상세 보기 →</span></div>
             <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+          </div>
+          <!-- 신사업 -->
+          <div class="block" id="blockProject" onclick="switchTabByName('project')">
+            <div class="block-header"><span class="block-title">🏗 신사업 공정 진행도</span><span class="block-expand">상세 보기 →</span></div>
+            <div id="projectSummary"></div>
           </div>
           <!-- Action Plan -->
           <div class="block full-width" id="blockAction" onclick="switchTabByName('action')">
@@ -335,6 +371,14 @@
               <div class="chart-wrap" style="height:280px"><canvas id="channelChartDetail"></canvas></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ════ 신사업 DETAIL ════ -->
+      <div class="tab-view" id="viewProject">
+        <div class="detail-card">
+          <h3 class="detail-title">🏗 신사업 공정 진행도 상세</h3>
+          <div id="projectDetail"></div>
         </div>
       </div>
 
@@ -405,31 +449,35 @@
 
     <!-- Panel: Manual -->
     <div class="import-panel" id="panelManual">
-      <h4 style="font-size:13px;color:var(--teal2);margin-bottom:12px">📈 KPI</h4>
+      <h4 style="font-size:13px;color:var(--teal2);margin-bottom:12px">📈 KPI (전월·전년 동월 비교)</h4>
       <div class="kpi-inputs">
         <div class="kpi-input-group">
           <label>KPI 1 항목명</label>
           <input type="text" id="m_k1n" placeholder="예: 검토 딜 수"/>
-          <label>값</label><input type="text" id="m_k1v" placeholder="예: 34건"/>
+          <label>이번 값</label><input type="text" id="m_k1v" placeholder="예: 34건"/>
           <label>전월 대비</label><input type="text" id="m_k1d" placeholder="예: ▲6건"/>
+          <label>전년 동월 대비</label><input type="text" id="m_k1y" placeholder="예: ▲11건"/>
         </div>
         <div class="kpi-input-group">
           <label>KPI 2 항목명</label>
           <input type="text" id="m_k2n" placeholder="예: 신규 계약"/>
-          <label>값</label><input type="text" id="m_k2v" placeholder="예: 7건"/>
+          <label>이번 값</label><input type="text" id="m_k2v" placeholder="예: 7건"/>
           <label>전월 대비</label><input type="text" id="m_k2d" placeholder="예: ▲2건"/>
+          <label>전년 동월 대비</label><input type="text" id="m_k2y" placeholder="예: ▲3건"/>
         </div>
         <div class="kpi-input-group">
           <label>KPI 3 항목명</label>
           <input type="text" id="m_k3n" placeholder="예: 계약 금액"/>
-          <label>값</label><input type="text" id="m_k3v" placeholder="예: 2.4억"/>
+          <label>이번 값</label><input type="text" id="m_k3v" placeholder="예: 2.4억"/>
           <label>전월 대비</label><input type="text" id="m_k3d" placeholder="예: ▲18%"/>
+          <label>전년 동월 대비</label><input type="text" id="m_k3y" placeholder="예: ▲45%"/>
         </div>
         <div class="kpi-input-group">
           <label>KPI 4 항목명</label>
           <input type="text" id="m_k4n" placeholder="예: 전환율"/>
-          <label>값</label><input type="text" id="m_k4v" placeholder="예: 20.6%"/>
+          <label>이번 값</label><input type="text" id="m_k4v" placeholder="예: 20.6%"/>
           <label>전월 대비</label><input type="text" id="m_k4d" placeholder="예: ▼1.2%p"/>
+          <label>전년 동월 대비</label><input type="text" id="m_k4y" placeholder="예: ▲3.4%p"/>
         </div>
       </div>
 
@@ -448,6 +496,12 @@
       <input type="text" id="m_tCounts" placeholder="3, 4, 5, 5, 7"/>
       <label class="field-label">계약 금액(백만)</label>
       <input type="text" id="m_tAmounts" placeholder="95, 130, 170, 203, 240"/>
+      <label class="field-label">채널별 비중 (형식: 채널명:비율, 쉼표 구분)</label>
+      <input type="text" id="m_channels" placeholder="인바운드:35, 아웃바운드:28, 파트너:22, 기존고객:15"/>
+
+      <h4 style="font-size:13px;color:var(--teal2);margin:16px 0 12px">🏗 신사업 공정 진행도 (줄바꿈 구분, 형식: 사업명|단계|진행률%|상태)</h4>
+      <div class="warn-box" style="margin-bottom:10px">상태 = 정상 / 주의 / 지연 중 하나. 단계 = 기획 / 실행 / 검증 등 자유롭게.</div>
+      <textarea id="m_projects" placeholder="신규 B2B 채널 구축|실행|65|정상&#10;파트너 제휴 프로그램|기획|30|주의&#10;데이터 분석 체계 도입|검증|90|지연"></textarea>
 
       <h4 style="font-size:13px;color:var(--teal2);margin:16px 0 12px">✅ 액션플랜 (줄바꿈으로 구분, 형식: 과제|담당|기한|High/Mid/Low)</h4>
       <textarea id="m_actions" placeholder="협상 중 5건 계약 클로징 집중 관리|김팀장|6/13|High&#10;신규 리드 15건 추가 발굴|이과장|6/20|High&#10;제안서 템플릿 표준화|박대리|6/27|Mid"></textarea>
@@ -677,6 +731,7 @@ function openDashboard(id) {
   renderPipeTable(r.pipeline||[], 'pipeTbody');
   renderActionTable(r.actions||[], 'actionTbody');
   renderTrendChart('trendChart', r.trend||{}, false);
+  renderProjectSummary(r.projects||[], 'projectSummary');
 
   // reset to summary tab
   document.querySelectorAll('.qnav-tab').forEach((t,i) => t.classList.toggle('active', i === 0));
@@ -686,16 +741,25 @@ function openDashboard(id) {
 
 function goHome() { showPage('pageLibrary'); destroyCharts(); }
 
+function deltaClass(v) {
+  if (!v) return 'kd-flat';
+  if (v.includes('▲') || v.includes('+')) return 'kd-up';
+  if (v.includes('▼') || v.includes('-')) return 'kd-down';
+  return 'kd-flat';
+}
+
 function renderKPI(kpis, targetId) {
   const el = document.getElementById(targetId);
   el.innerHTML = kpis.map(k => {
-    const isUp = k.delta && (k.delta.includes('▲') || k.delta.includes('+'));
-    const isDown = k.delta && (k.delta.includes('▼') || k.delta.includes('-'));
-    const cls = isUp ? 'up' : isDown ? 'down' : '';
+    const mom = k.delta || '';   // 전월
+    const yoy = k.yoy || '';     // 전년 동월
     return `<div class="kpi-card">
       <div class="kv" style="color:${k.color||'#14B8A6'}">${k.value}</div>
       <div class="kl">${k.name}</div>
-      ${k.delta?`<div class="kd ${cls}">${k.delta}</div>`:''}
+      <div class="kd-row">
+        ${mom?`<div class="kd-item"><span class="kd-lbl">전월</span><span class="${deltaClass(mom)}">${mom}</span></div>`:''}
+        ${yoy?`<div class="kd-item"><span class="kd-lbl">전년</span><span class="${deltaClass(yoy)}">${yoy}</span></div>`:''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -728,6 +792,7 @@ function renderActionTable(actions, tbodyId) {
 }
 
 function renderTrendChart(canvasId, trend, large) {
+  if (typeof Chart === 'undefined') return;
   if (charts[canvasId]) { charts[canvasId].destroy(); }
   const canvas = document.getElementById(canvasId);
   if (!canvas || !trend.months) return;
@@ -753,6 +818,7 @@ function renderTrendChart(canvasId, trend, large) {
 }
 
 function renderPipeChart(canvasId, pipeline) {
+  if (typeof Chart === 'undefined') return;
   if (charts[canvasId]) charts[canvasId].destroy();
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
@@ -771,6 +837,7 @@ function renderPipeChart(canvasId, pipeline) {
 }
 
 function renderChannelChart(canvasId, channels) {
+  if (typeof Chart === 'undefined') return;
   if (charts[canvasId]) charts[canvasId].destroy();
   const canvas = document.getElementById(canvasId);
   if (!canvas || !channels) return;
@@ -1021,7 +1088,8 @@ async function saveReport() {
     const name = document.getElementById(`m_k${n}n`).value.trim();
     const value = document.getElementById(`m_k${n}v`).value.trim();
     const delta = document.getElementById(`m_k${n}d`).value.trim();
-    if (name || value) kpis.push({ name, value, delta, color: kpiColors[n-1] });
+    const yoy = (document.getElementById(`m_k${n}y`)||{}).value?.trim() || '';
+    if (name || value) kpis.push({ name, value, delta, yoy, color: kpiColors[n-1] });
   });
 
   const stages = (document.getElementById('m_stages').value||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -1034,6 +1102,19 @@ async function saveReport() {
   const tAmounts = (document.getElementById('m_tAmounts').value||'').split(',').map(s=>parseFloat(s)||0);
   const trend = { months, counts: tCounts, amounts: tAmounts };
 
+  // channels: "인바운드:35, 아웃바운드:28"
+  const channels = (document.getElementById('m_channels').value||'').split(',').map(s=>s.trim()).filter(Boolean).map(pair => {
+    const [name, val] = pair.split(':').map(x=>x.trim());
+    return { name, value: parseFloat(val)||0 };
+  });
+
+  // projects: "사업명|단계|진행률|상태"
+  const projLines = (document.getElementById('m_projects').value||'').split('\n').filter(Boolean);
+  const projects = projLines.map(l => {
+    const p = l.split('|').map(s=>s.trim());
+    return { name:p[0]||'', stage:p[1]||'기획', progress:parseInt(p[2])||0, status:p[3]||'정상' };
+  });
+
   const actionLines = (document.getElementById('m_actions').value||'').split('\n').filter(Boolean);
   const actions = actionLines.map(l => {
     const p = l.split('|').map(s=>s.trim());
@@ -1043,7 +1124,7 @@ async function saveReport() {
   const report = {
     id: 'r_' + Date.now(),
     title, period, folder,
-    kpis, pipeline, trend, actions,
+    kpis, pipeline, trend, channels, projects, actions,
     createdAt: new Date().toLocaleDateString('ko-KR'),
   };
 
@@ -1057,10 +1138,10 @@ async function saveReport() {
 }
 
 function resetImportForm() {
-  ['iTitle','iPeriod','m_k1n','m_k1v','m_k1d','m_k2n','m_k2v','m_k2d',
-   'm_k3n','m_k3v','m_k3d','m_k4n','m_k4v','m_k4d',
-   'm_stages','m_counts','m_amounts','m_months','m_tCounts','m_tAmounts','m_actions',
-   'driveLink'].forEach(id => {
+  ['iTitle','iPeriod','m_k1n','m_k1v','m_k1d','m_k1y','m_k2n','m_k2v','m_k2d','m_k2y',
+   'm_k3n','m_k3v','m_k3d','m_k3y','m_k4n','m_k4v','m_k4d','m_k4y',
+   'm_stages','m_counts','m_amounts','m_months','m_tCounts','m_tAmounts','m_channels',
+   'm_projects','m_actions','driveLink'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1120,7 +1201,7 @@ function switchTab(tabName, btn) {
   document.querySelectorAll('.qnav-tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
   else {
-    const map = { summary:0, kpi:1, pipe:2, trend:3, action:4 };
+    const map = { summary:0, kpi:1, pipe:2, trend:3, project:4, action:5 };
     document.querySelectorAll('.qnav-tab')[map[tabName]]?.classList.add('active');
   }
 
@@ -1134,6 +1215,7 @@ function switchTab(tabName, btn) {
   // render detail content lazily
   if (tabName === 'summary') {
     setTimeout(() => renderTrendChart('trendChart', r.trend||{}, false), 60);
+    renderProjectSummary(r.projects||[], 'projectSummary');
   }
   if (tabName === 'kpi') renderKpiDetail(r);
   if (tabName === 'pipe') {
@@ -1146,13 +1228,14 @@ function switchTab(tabName, btn) {
       renderChannelChart('channelChartDetail', r.channels||null);
     }, 60);
   }
+  if (tabName === 'project') renderProjectDetail(r.projects||[]);
   if (tabName === 'action') renderActionGrouped(r.actions||[]);
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function switchTabByName(tabName) {
-  const map = { summary:0, kpi:1, pipe:2, trend:3, action:4 };
+  const map = { summary:0, kpi:1, pipe:2, trend:3, project:4, action:5 };
   const btn = document.querySelectorAll('.qnav-tab')[map[tabName]];
   switchTab(tabName, btn);
 }
@@ -1162,18 +1245,73 @@ function renderKpiDetail(r) {
   renderKPI(r.kpis||[], 'kpiGridDetail');
   const el = document.getElementById('kpiDeltaList');
   const kpis = r.kpis || [];
-  el.innerHTML = '<h4 class="detail-sub" style="text-align:left;margin-top:8px">전월 대비 변화</h4>' +
-    kpis.map(k => {
-      const isUp = k.delta && (k.delta.includes('▲') || k.delta.includes('+'));
-      const isDown = k.delta && (k.delta.includes('▼') || k.delta.includes('-'));
-      const color = isUp ? '#22C55E' : isDown ? '#EF4444' : '#64748B';
-      const pct = isUp ? 70 : isDown ? 40 : 50;
-      return `<div class="delta-row">
-        <span class="delta-name">${k.name}</span>
-        <span class="delta-track"><span class="delta-fill" style="width:${pct}%;background:${color}"></span></span>
-        <span class="delta-val" style="color:${color}">${k.delta||'-'}</span>
+
+  const barRow = (name, v, axisLabel) => {
+    const up = v && (v.includes('▲')||v.includes('+'));
+    const down = v && (v.includes('▼')||v.includes('-'));
+    const color = up ? '#22C55E' : down ? '#EF4444' : '#64748B';
+    const pct = up ? 72 : down ? 38 : 50;
+    return `<div class="delta-row">
+      <span class="delta-name">${name} <span style="color:var(--g1);font-size:11px">(${axisLabel})</span></span>
+      <span class="delta-track"><span class="delta-fill" style="width:${pct}%;background:${color}"></span></span>
+      <span class="delta-val" style="color:${color}">${v||'-'}</span>
+    </div>`;
+  };
+
+  let html = '<h4 class="detail-sub" style="text-align:left;margin-top:8px">전월 대비 변화</h4>';
+  html += kpis.map(k => barRow(k.name, k.delta, '전월')).join('');
+  html += '<h4 class="detail-sub" style="text-align:left;margin-top:20px">전년 동월 대비 변화</h4>';
+  html += kpis.map(k => barRow(k.name, k.yoy, '전년')).join('');
+  el.innerHTML = html;
+}
+
+// ── 신사업 공정 진행도 (summary)
+function renderProjectSummary(projects, targetId) {
+  const el = document.getElementById(targetId);
+  if (!projects || !projects.length) { el.innerHTML = '<p style="color:var(--g1);font-size:13px">등록된 신사업이 없습니다.</p>'; return; }
+  const statusMap = { '정상':['ok','#22C55E'], '주의':['warn','#F59E0B'], '지연':['delay','#EF4444'] };
+  el.innerHTML = projects.map(p => {
+    const [scls, scolor] = statusMap[p.status] || statusMap['정상'];
+    return `<div class="proj-item">
+      <div class="proj-top">
+        <div><span class="proj-name">${p.name}</span><span class="proj-stage">${p.stage}</span></div>
+        <span class="proj-status ${scls}">${p.status}</span>
+      </div>
+      <div class="proj-bar-bg"><div class="proj-bar-fill" style="width:${p.progress}%;background:${scolor}"><span class="proj-pct">${p.progress}%</span></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── 신사업 공정 진행도 (detail with stage track)
+function renderProjectDetail(projects) {
+  const el = document.getElementById('projectDetail');
+  if (!projects || !projects.length) { el.innerHTML = '<p style="color:var(--g1)">등록된 신사업이 없습니다.</p>'; return; }
+  const statusMap = { '정상':['ok','#22C55E'], '주의':['warn','#F59E0B'], '지연':['delay','#EF4444'] };
+  const allStages = ['기획','실행','검증','완료'];
+
+  el.innerHTML = projects.map(p => {
+    const [scls, scolor] = statusMap[p.status] || statusMap['정상'];
+    const curIdx = allStages.indexOf(p.stage);
+    const stagesHtml = allStages.map((st, i) => {
+      let dotCls = 'todo', mark = i+1;
+      if (i < curIdx) { dotCls = 'done'; mark = '✓'; }
+      else if (i === curIdx) { dotCls = 'current'; mark = '▶'; }
+      return `<div class="proj-stage-node">
+        ${i < allStages.length-1 ? '<div class="proj-stage-line"></div>' : ''}
+        <div class="proj-stage-dot ${dotCls}">${mark}</div>
+        <div class="proj-stage-label">${st}</div>
       </div>`;
     }).join('');
+
+    return `<div class="proj-detail-card">
+      <div class="proj-top">
+        <div><span class="proj-name" style="font-size:16px">${p.name}</span><span class="proj-stage">현재: ${p.stage}</span></div>
+        <span class="proj-status ${scls}">${p.status}</span>
+      </div>
+      <div class="proj-bar-bg" style="height:14px"><div class="proj-bar-fill" style="width:${p.progress}%;background:${scolor}"><span class="proj-pct">${p.progress}%</span></div></div>
+      <div class="proj-stages-track">${stagesHtml}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── Action plan grouped by priority
