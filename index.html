@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>보고서 대시보드</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
@@ -28,28 +27,24 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif; background: var(--navy2); color: var(--white); min-height: 100vh; }
 
-  /* ── LAYOUT ── */
   .app { display: flex; min-height: 100vh; }
   .sidebar { width: 240px; background: var(--sidebar); padding: 24px 0; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.06); }
   .main { flex: 1; overflow-y: auto; }
 
-  /* ── SIDEBAR ── */
   .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
   .sidebar-logo h1 { font-size: 15px; font-weight: 700; color: var(--teal2); letter-spacing: 0.3px; }
   .sidebar-logo p { font-size: 11px; color: var(--g1); margin-top: 3px; }
   .sidebar-section { padding: 16px 20px 8px; font-size: 10px; font-weight: 700; color: var(--g1); letter-spacing: 1.2px; text-transform: uppercase; }
   .folder-tree { padding: 0 12px; }
-  .folder-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--g2); transition: all .15s; position: relative; }
+  .folder-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--g2); transition: all .15s; }
   .folder-item:hover { background: rgba(13,148,136,.12); color: var(--teal2); }
   .folder-item.active { background: rgba(13,148,136,.18); color: var(--teal2); font-weight: 600; }
   .folder-item .icon { font-size: 14px; width: 18px; text-align: center; }
   .folder-item .count { margin-left: auto; background: rgba(255,255,255,.1); border-radius: 10px; padding: 1px 7px; font-size: 10px; }
-  .folder-children { padding-left: 16px; }
   .sidebar-bottom { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); }
   .btn-new { width: 100%; background: var(--teal); color: #fff; border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
   .btn-new:hover { background: var(--teal2); }
 
-  /* ── TOP BAR ── */
   .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid rgba(255,255,255,.06); background: var(--navy2); position: sticky; top: 0; z-index: 10; }
   .topbar-left h2 { font-size: 18px; font-weight: 700; }
   .topbar-left p { font-size: 12px; color: var(--g1); margin-top: 2px; }
@@ -60,7 +55,6 @@
   .btn-primary { background: var(--teal); color: #fff; }
   .btn-primary:hover { background: var(--teal2); }
 
-  /* ── HOME / LIBRARY ── */
   .page { padding: 28px; display: none; }
   .page.active { display: block; }
   .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
@@ -70,7 +64,6 @@
   .report-card .rc-month { font-size: 11px; color: var(--teal2); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
   .report-card .rc-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
   .report-card .rc-kpis { display: flex; gap: 16px; flex-wrap: wrap; }
-  .rc-kpi { display: flex; flex-direction: column; }
   .rc-kpi .val { font-size: 20px; font-weight: 800; color: var(--teal2); }
   .rc-kpi .lbl { font-size: 10px; color: var(--g1); margin-top: 1px; }
   .report-card .rc-date { margin-top: 14px; font-size: 11px; color: var(--g1); }
@@ -82,13 +75,11 @@
   .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
   .empty-state h3 { font-size: 16px; color: var(--g2); margin-bottom: 8px; }
 
-  /* ── QUICK NAV TABS ── */
   .qnav { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
   .qnav-tab { padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,.1); color: var(--g2); background: transparent; transition: all .15s; }
   .qnav-tab:hover { border-color: var(--teal); color: var(--teal2); }
   .qnav-tab.active { background: var(--teal); border-color: var(--teal); color: #fff; }
 
-  /* ── DASHBOARD BLOCKS ── */
   .dashboard-header { margin-bottom: 24px; }
   .dashboard-header h2 { font-size: 22px; font-weight: 800; }
   .dashboard-header p { font-size: 13px; color: var(--g1); margin-top: 4px; }
@@ -103,24 +94,24 @@
   .block:hover .block-expand { opacity: 1; }
   .block.full-width { grid-column: 1 / -1; }
 
-  /* ── TAB VIEWS (summary / detail) ── */
   .tab-view { display: none; }
   .tab-view.active { display: block; }
   .detail-card { background: var(--card-bg); border-radius: 14px; padding: 28px; border: 1px solid rgba(255,255,255,.07); }
   .detail-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
-  .detail-sub { font-size: 13px; font-weight: 700; color: var(--g2); margin-bottom: 12px; text-align: center; }
+  .detail-sub { font-size: 13px; font-weight: 700; color: var(--g2); margin-bottom: 12px; }
   .detail-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
   @media (max-width: 800px) { .detail-2col { grid-template-columns: 1fr; } }
   .delta-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
   .delta-row:last-child { border-bottom: none; }
-  .delta-name { width: 120px; font-size: 13px; color: var(--g2); }
+  .delta-name { width: 140px; font-size: 13px; color: var(--g2); flex-shrink: 0; }
   .delta-track { flex: 1; height: 10px; background: rgba(255,255,255,.06); border-radius: 5px; overflow: hidden; }
-  .delta-fill { height: 100%; border-radius: 5px; }
-  .delta-val { width: 90px; text-align: right; font-size: 13px; font-weight: 700; }
-  .action-group { margin-bottom: 24px; }
-  .action-group-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .delta-fill { height: 100%; border-radius: 5px; transition: width .5s; }
+  .delta-val { width: 100px; text-align: right; font-size: 13px; font-weight: 700; }
 
-  /* ── KPI dual delta (전월/전년) ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi-card { background: rgba(0,0,0,.2); border-radius: 10px; padding: 14px; }
+  .kpi-card .kv { font-size: 28px; font-weight: 800; line-height: 1; }
+  .kpi-card .kl { font-size: 11px; color: var(--g1); margin-top: 4px; }
   .kpi-card .kd-row { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
   .kpi-card .kd-item { font-size: 11px; display: flex; justify-content: space-between; }
   .kd-item .kd-lbl { color: var(--g1); }
@@ -128,7 +119,6 @@
   .kd-item .kd-down { color: var(--red); font-weight: 600; }
   .kd-item .kd-flat { color: var(--g1); }
 
-  /* ── 신사업 공정 진행도 ── */
   .proj-item { background: rgba(0,0,0,.2); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
   .proj-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .proj-name { font-size: 14px; font-weight: 700; }
@@ -137,39 +127,26 @@
   .proj-status.ok    { background: rgba(34,197,94,.15); color: var(--green); }
   .proj-status.warn  { background: rgba(245,158,11,.15); color: var(--amber); }
   .proj-status.delay { background: rgba(239,68,68,.15); color: var(--red); }
-  .proj-bar-bg { background: rgba(255,255,255,.08); border-radius: 6px; height: 12px; overflow: hidden; position: relative; }
+  .proj-bar-bg { background: rgba(255,255,255,.08); border-radius: 6px; height: 12px; overflow: hidden; }
   .proj-bar-fill { height: 100%; border-radius: 6px; transition: width .5s; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
   .proj-pct { font-size: 10px; font-weight: 800; color: #fff; }
   .proj-detail-card { background: rgba(0,0,0,.2); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-  .proj-stages-track { display: flex; align-items: center; gap: 0; margin-top: 16px; }
+  .proj-stages-track { display: flex; align-items: flex-start; gap: 0; margin-top: 20px; }
   .proj-stage-node { flex: 1; text-align: center; position: relative; }
-  .proj-stage-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .proj-stage-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
   .proj-stage-dot.done { background: var(--teal); color: #fff; }
   .proj-stage-dot.current { background: var(--amber); color: #fff; box-shadow: 0 0 0 4px rgba(245,158,11,.2); }
   .proj-stage-dot.todo { background: rgba(255,255,255,.1); color: var(--g1); }
   .proj-stage-label { font-size: 11px; color: var(--g2); }
-  .proj-stage-line { position: absolute; top: 14px; left: 50%; width: 100%; height: 2px; background: rgba(255,255,255,.1); z-index: -1; }
+  .proj-stage-line { position: absolute; top: 14px; left: 50%; width: 100%; height: 2px; background: rgba(255,255,255,.1); z-index: 0; }
 
-  /* KPI cards */
-  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  .kpi-card { background: rgba(0,0,0,.2); border-radius: 10px; padding: 14px; }
-  .kpi-card .kv { font-size: 28px; font-weight: 800; line-height: 1; }
-  .kpi-card .kl { font-size: 11px; color: var(--g1); margin-top: 4px; }
-  .kpi-card .kd { font-size: 12px; font-weight: 600; margin-top: 8px; }
-  .kd.up { color: var(--green); }
-  .kd.down { color: var(--red); }
-
-  /* Pipeline table */
   .pipe-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .pipe-table th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--g1); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.08); }
   .pipe-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,.05); }
   .pipe-table tr:last-child td { border-bottom: none; }
-  .stage-bar { height: 6px; border-radius: 3px; background: var(--teal); margin-top: 4px; }
 
-  /* Chart containers */
   .chart-wrap { position: relative; height: 200px; }
 
-  /* Action plan */
   .action-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .action-table th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--g1); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.08); }
   .action-table td { padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; }
@@ -177,8 +154,9 @@
   .badge-high { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
   .badge-mid  { background: rgba(245,158,11,.15); color: var(--amber); border: 1px solid rgba(245,158,11,.3); }
   .badge-low  { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+  .action-group { margin-bottom: 24px; }
+  .action-group-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 
-  /* ── MODAL (focus view) ── */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--card-bg); border-radius: 16px; width: 100%; max-width: 860px; max-height: 90vh; overflow-y: auto; padding: 28px; border: 1px solid rgba(255,255,255,.1); }
@@ -187,9 +165,7 @@
   .modal-close { background: rgba(255,255,255,.1); border: none; color: #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
   .modal-close:hover { background: var(--red); }
 
-  /* ── IMPORT MODAL ── */
   .import-section { margin-bottom: 24px; }
-  .import-section h4 { font-size: 14px; font-weight: 700; color: var(--teal2); margin-bottom: 12px; }
   .mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
   .mode-tab { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: transparent; color: var(--g2); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition: all .15s; }
   .mode-tab.active { background: var(--teal); border-color: var(--teal); color: #fff; }
@@ -213,21 +189,14 @@
   .kpi-input-group label { font-size: 11px; color: var(--teal2); font-weight: 700; display: block; margin-bottom: 6px; }
   .kpi-input-group input { margin-bottom: 6px; }
 
-  /* ── FOLDER MANAGE ── */
   .folder-manage { display: flex; gap: 8px; margin-top: 16px; }
   .folder-manage input { flex: 1; margin-bottom: 0; }
 
-  /* ── STATUS INDICATOR ── */
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  .status-dot.green { background: var(--green); }
-  .status-dot.red { background: var(--red); }
+  .firebase-status { font-size: 11px; padding: 6px 12px; border-radius: 6px; margin: 0 20px 12px; }
+  .firebase-status.ok   { background: rgba(34,197,94,.1);  color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+  .firebase-status.err  { background: rgba(239,68,68,.1);  color: var(--red);   border: 1px solid rgba(239,68,68,.2); }
+  .firebase-status.warn { background: rgba(245,158,11,.1); color: var(--amber); border: 1px solid rgba(245,158,11,.2); }
 
-  /* ── PROGRESS BAR ── */
-  .progress-wrap { margin-top: 8px; }
-  .progress-bar-bg { background: rgba(255,255,255,.1); border-radius: 4px; height: 6px; overflow: hidden; }
-  .progress-bar-fill { height: 100%; border-radius: 4px; background: var(--teal); transition: width .4s; }
-
-  /* ── RESPONSIVE ── */
   @media (max-width: 900px) {
     .sidebar { width: 200px; }
     .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -238,23 +207,16 @@
     .kpi-grid { grid-template-columns: 1fr 1fr; }
     .field-row { grid-template-columns: 1fr; }
   }
-
-  /* ── FIREBASE STATUS ── */
-  .firebase-status { font-size: 11px; padding: 6px 12px; border-radius: 6px; margin: 0 20px 12px; }
-  .firebase-status.ok { background: rgba(34,197,94,.1); color: var(--green); border: 1px solid rgba(34,197,94,.2); }
-  .firebase-status.err { background: rgba(239,68,68,.1); color: var(--red); border: 1px solid rgba(239,68,68,.2); }
-  .firebase-status.warn { background: rgba(245,158,11,.1); color: var(--amber); border: 1px solid rgba(245,158,11,.2); }
 </style>
 </head>
 <body>
 <div class="app">
-  <!-- ── SIDEBAR ── -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <h1>📊 보고서 허브</h1>
       <p>BD 성과 대시보드</p>
     </div>
-    <div id="firebaseStatus" class="firebase-status warn">⚙ Firebase 미연결 (로컬 모드)</div>
+    <div id="firebaseStatus" class="firebase-status warn">⚙ 로컬 저장 모드 · <span style="cursor:pointer;text-decoration:underline" onclick="openModal('modalFirebase')">Firebase 연결하기</span></div>
     <div class="sidebar-section">라이브러리</div>
     <div class="folder-tree" id="folderTree"></div>
     <div class="sidebar-bottom">
@@ -262,9 +224,7 @@
     </div>
   </aside>
 
-  <!-- ── MAIN ── -->
   <main class="main">
-    <!-- TOP BAR -->
     <div class="topbar">
       <div class="topbar-left">
         <h2 id="topbarTitle">전체 보고서</h2>
@@ -276,19 +236,16 @@
       </div>
     </div>
 
-    <!-- PAGE: LIBRARY -->
     <div class="page active" id="pageLibrary">
       <div id="reportGrid" class="report-grid"></div>
     </div>
 
-    <!-- PAGE: DASHBOARD -->
     <div class="page" id="pageDashboard">
       <span class="db-back" onclick="goHome()">← 목록으로</span>
       <div class="dashboard-header">
         <h2 id="dbTitle"></h2>
         <p id="dbSub"></p>
       </div>
-      <!-- Quick Nav -->
       <div class="qnav">
         <button class="qnav-tab active" onclick="switchTab('summary',this)">📋 요약</button>
         <button class="qnav-tab" onclick="switchTab('kpi',this)">📈 KPI</button>
@@ -298,34 +255,29 @@
         <button class="qnav-tab" onclick="switchTab('action',this)">✅ 액션플랜</button>
       </div>
 
-      <!-- ════ SUMMARY VIEW ════ -->
+      <!-- SUMMARY -->
       <div class="tab-view active" id="viewSummary">
         <div class="blocks-grid">
-          <!-- KPI -->
-          <div class="block full-width" id="blockKPI" onclick="switchTabByName('kpi')">
+          <div class="block full-width" onclick="switchTabByName('kpi')">
             <div class="block-header"><span class="block-title">📈 핵심 KPI</span><span class="block-expand">상세 보기 →</span></div>
             <div class="kpi-grid" id="kpiGrid"></div>
           </div>
-          <!-- Pipeline -->
-          <div class="block" id="blockPipe" onclick="switchTabByName('pipe')">
+          <div class="block" onclick="switchTabByName('pipe')">
             <div class="block-header"><span class="block-title">🔀 파이프라인 현황</span><span class="block-expand">상세 보기 →</span></div>
-            <table class="pipe-table" id="pipeTable">
+            <table class="pipe-table">
               <thead><tr><th>단계</th><th>건수</th><th>금액(백만)</th></tr></thead>
               <tbody id="pipeTbody"></tbody>
             </table>
           </div>
-          <!-- Trend -->
-          <div class="block" id="blockTrend" onclick="switchTabByName('trend')">
+          <div class="block" onclick="switchTabByName('trend')">
             <div class="block-header"><span class="block-title">📉 월별 트렌드</span><span class="block-expand">상세 보기 →</span></div>
             <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
           </div>
-          <!-- 신사업 -->
-          <div class="block" id="blockProject" onclick="switchTabByName('project')">
+          <div class="block" onclick="switchTabByName('project')">
             <div class="block-header"><span class="block-title">🏗 신사업 공정 진행도</span><span class="block-expand">상세 보기 →</span></div>
             <div id="projectSummary"></div>
           </div>
-          <!-- Action Plan -->
-          <div class="block full-width" id="blockAction" onclick="switchTabByName('action')">
+          <div class="block full-width" onclick="switchTabByName('action')">
             <div class="block-header"><span class="block-title">✅ 액션플랜</span><span class="block-expand">상세 보기 →</span></div>
             <table class="action-table">
               <thead><tr><th>#</th><th>과제</th><th>담당</th><th>기한</th><th>우선순위</th></tr></thead>
@@ -335,32 +287,30 @@
         </div>
       </div>
 
-      <!-- ════ KPI DETAIL ════ -->
+      <!-- KPI DETAIL -->
       <div class="tab-view" id="viewKpi">
         <div class="detail-card">
           <h3 class="detail-title">📈 핵심 KPI 상세</h3>
-          <div class="kpi-grid" id="kpiGridDetail" style="margin-bottom:24px"></div>
+          <div class="kpi-grid" id="kpiGridDetail" style="margin-bottom:28px"></div>
           <div id="kpiDeltaList"></div>
         </div>
       </div>
 
-      <!-- ════ PIPELINE DETAIL ════ -->
+      <!-- PIPELINE DETAIL -->
       <div class="tab-view" id="viewPipe">
         <div class="detail-card">
           <h3 class="detail-title">🔀 파이프라인 상세</h3>
           <div class="detail-2col">
-            <div>
-              <table class="pipe-table" id="pipeTableDetail">
-                <thead><tr><th>단계</th><th>건수</th><th>금액(백만)</th><th>비율</th></tr></thead>
-                <tbody id="pipeTbodyDetail"></tbody>
-              </table>
-            </div>
+            <table class="pipe-table" id="pipeTableDetail">
+              <thead><tr><th>단계</th><th>건수</th><th>금액(백만)</th><th>비율</th></tr></thead>
+              <tbody id="pipeTbodyDetail"></tbody>
+            </table>
             <div class="chart-wrap" style="height:320px"><canvas id="pipeChartDetail"></canvas></div>
           </div>
         </div>
       </div>
 
-      <!-- ════ TREND DETAIL ════ -->
+      <!-- TREND DETAIL -->
       <div class="tab-view" id="viewTrend">
         <div class="detail-card">
           <h3 class="detail-title">📉 트렌드 상세</h3>
@@ -374,7 +324,7 @@
         </div>
       </div>
 
-      <!-- ════ 신사업 DETAIL ════ -->
+      <!-- 신사업 DETAIL -->
       <div class="tab-view" id="viewProject">
         <div class="detail-card">
           <h3 class="detail-title">🏗 신사업 공정 진행도 상세</h3>
@@ -382,7 +332,7 @@
         </div>
       </div>
 
-      <!-- ════ ACTION DETAIL ════ -->
+      <!-- ACTION DETAIL -->
       <div class="tab-view" id="viewAction">
         <div class="detail-card">
           <h3 class="detail-title">✅ 액션플랜 상세</h3>
@@ -393,20 +343,10 @@
   </main>
 </div>
 
-<!-- ══════════ MODALS ══════════ -->
-
-<!-- (모달 미사용 — 탭 상세로 대체) -->
-<div style="display:none">
-  <div id="kpiGridModal"></div><div id="pipeTbodyModal"></div>
-  <div id="trendChartModal"></div><div id="channelChartModal"></div>
-  <div id="pipeChartModal"></div><div id="actionTbodyModal"></div>
-</div>
-
 <!-- IMPORT MODAL -->
 <div class="modal-overlay" id="modalImport">
   <div class="modal" style="max-width:600px">
     <div class="modal-top"><h3>+ 보고서 추가</h3><button class="modal-close" onclick="closeModal('modalImport')">✕</button></div>
-
     <div class="import-section">
       <div class="field-row">
         <div>
@@ -421,60 +361,51 @@
       <label class="field-label">폴더</label>
       <select id="iFolder"></select>
     </div>
-
-    <!-- Mode Tabs -->
     <div class="mode-tabs">
       <button class="mode-tab active" onclick="switchMode('pptx')">📎 PPT 파일 파싱</button>
       <button class="mode-tab" onclick="switchMode('drive')">🔗 구글 드라이브 링크</button>
       <button class="mode-tab" onclick="switchMode('manual')">✏️ 직접 입력</button>
     </div>
 
-    <!-- Panel: PPTX -->
     <div class="import-panel active" id="panelPptx">
       <label class="field-label">PPT 파일 선택 (.pptx)</label>
       <input type="file" id="pptxFile" accept=".pptx"/>
-      <div class="warn-box">⚠ PPT 안의 텍스트·숫자를 자동 파싱합니다. 이미지로만 된 슬라이드는 인식이 어려울 수 있어요. 그 경우 직접 입력 모드로 전환하세요.</div>
+      <div class="warn-box">⚠ @DATA 블록이 포함된 BD 보고서 템플릿 PPT를 업로드하면 자동 파싱됩니다. @DATA 블록 없는 PPT는 직접 입력 모드를 사용하세요.</div>
       <button class="btn btn-primary" style="width:100%" onclick="parsePptx()">파싱 시작</button>
       <div id="pptxParseResult" style="margin-top:14px;display:none"></div>
     </div>
 
-    <!-- Panel: Drive -->
     <div class="import-panel" id="panelDrive">
       <label class="field-label">구글 드라이브 공유 링크</label>
       <input type="text" id="driveLink" placeholder="https://drive.google.com/file/d/..."/>
-      <div class="warn-box">⚠ 파일 공유 설정이 "링크가 있는 모든 사용자"로 되어 있어야 합니다. 드라이브 → 파일 우클릭 → 공유 → 링크 복사.</div>
+      <div class="warn-box">⚠ 파일 공유 설정이 "링크가 있는 모든 사용자"로 되어 있어야 합니다.</div>
       <button class="btn btn-primary" style="width:100%" onclick="parseDriveLink()">불러오기</button>
       <div id="driveParseResult" style="margin-top:14px;display:none"></div>
     </div>
 
-    <!-- Panel: Manual -->
     <div class="import-panel" id="panelManual">
       <h4 style="font-size:13px;color:var(--teal2);margin-bottom:12px">📈 KPI (전월·전년 동월 비교)</h4>
       <div class="kpi-inputs">
         <div class="kpi-input-group">
-          <label>KPI 1 항목명</label>
-          <input type="text" id="m_k1n" placeholder="예: 검토 딜 수"/>
+          <label>KPI 1 항목명</label><input type="text" id="m_k1n" placeholder="예: 검토 딜 수"/>
           <label>이번 값</label><input type="text" id="m_k1v" placeholder="예: 34건"/>
           <label>전월 대비</label><input type="text" id="m_k1d" placeholder="예: ▲6건"/>
           <label>전년 동월 대비</label><input type="text" id="m_k1y" placeholder="예: ▲11건"/>
         </div>
         <div class="kpi-input-group">
-          <label>KPI 2 항목명</label>
-          <input type="text" id="m_k2n" placeholder="예: 신규 계약"/>
+          <label>KPI 2 항목명</label><input type="text" id="m_k2n" placeholder="예: 신규 계약"/>
           <label>이번 값</label><input type="text" id="m_k2v" placeholder="예: 7건"/>
           <label>전월 대비</label><input type="text" id="m_k2d" placeholder="예: ▲2건"/>
           <label>전년 동월 대비</label><input type="text" id="m_k2y" placeholder="예: ▲3건"/>
         </div>
         <div class="kpi-input-group">
-          <label>KPI 3 항목명</label>
-          <input type="text" id="m_k3n" placeholder="예: 계약 금액"/>
+          <label>KPI 3 항목명</label><input type="text" id="m_k3n" placeholder="예: 계약 금액"/>
           <label>이번 값</label><input type="text" id="m_k3v" placeholder="예: 2.4억"/>
           <label>전월 대비</label><input type="text" id="m_k3d" placeholder="예: ▲18%"/>
           <label>전년 동월 대비</label><input type="text" id="m_k3y" placeholder="예: ▲45%"/>
         </div>
         <div class="kpi-input-group">
-          <label>KPI 4 항목명</label>
-          <input type="text" id="m_k4n" placeholder="예: 전환율"/>
+          <label>KPI 4 항목명</label><input type="text" id="m_k4n" placeholder="예: 전환율"/>
           <label>이번 값</label><input type="text" id="m_k4v" placeholder="예: 20.6%"/>
           <label>전월 대비</label><input type="text" id="m_k4d" placeholder="예: ▼1.2%p"/>
           <label>전년 동월 대비</label><input type="text" id="m_k4y" placeholder="예: ▲3.4%p"/>
@@ -500,11 +431,11 @@
       <input type="text" id="m_channels" placeholder="인바운드:35, 아웃바운드:28, 파트너:22, 기존고객:15"/>
 
       <h4 style="font-size:13px;color:var(--teal2);margin:16px 0 12px">🏗 신사업 공정 진행도 (줄바꿈 구분, 형식: 사업명|단계|진행률%|상태)</h4>
-      <div class="warn-box" style="margin-bottom:10px">상태 = 정상 / 주의 / 지연 중 하나. 단계 = 기획 / 실행 / 검증 등 자유롭게.</div>
-      <textarea id="m_projects" placeholder="신규 B2B 채널 구축|실행|65|정상&#10;파트너 제휴 프로그램|기획|30|주의&#10;데이터 분석 체계 도입|검증|90|지연"></textarea>
+      <div class="warn-box" style="margin-bottom:10px">상태 = 정상 / 주의 / 지연 중 하나. 단계 = 기획 / 실행 / 검증 / 완료.</div>
+      <textarea id="m_projects" placeholder="신규 B2B 채널 구축|실행|65|정상&#10;파트너 제휴 프로그램|기획|30|주의"></textarea>
 
       <h4 style="font-size:13px;color:var(--teal2);margin:16px 0 12px">✅ 액션플랜 (줄바꿈으로 구분, 형식: 과제|담당|기한|High/Mid/Low)</h4>
-      <textarea id="m_actions" placeholder="협상 중 5건 계약 클로징 집중 관리|김팀장|6/13|High&#10;신규 리드 15건 추가 발굴|이과장|6/20|High&#10;제안서 템플릿 표준화|박대리|6/27|Mid"></textarea>
+      <textarea id="m_actions" placeholder="협상 중 5건 계약 클로징 집중 관리|김팀장|6/13|High&#10;신규 리드 15건 추가 발굴|이과장|6/20|High"></textarea>
     </div>
 
     <div style="margin-top:20px;display:flex;gap:10px">
@@ -526,7 +457,7 @@
   </div>
 </div>
 
-<!-- FIREBASE CONFIG MODAL -->
+<!-- FIREBASE CONFIG -->
 <div class="modal-overlay" id="modalFirebase">
   <div class="modal" style="max-width:500px">
     <div class="modal-top"><h3>🔥 Firebase 연결</h3><button class="modal-close" onclick="closeModal('modalFirebase')">✕</button></div>
@@ -540,29 +471,27 @@
 </div>
 
 <script>
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 // STATE
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 let db = {
   folders: ['2026년', '2026년/1분기', '2026년/2분기'],
   reports: [],
   currentFolder: null,
   currentReport: null,
 };
-let firebaseDB = null;
 let charts = {};
 let currentMode = 'pptx';
 
-// ── STORAGE (localStorage fallback)
 function saveLocal() { localStorage.setItem('reportHub_db', JSON.stringify(db)); }
 function loadLocal() {
   const s = localStorage.getItem('reportHub_db');
   if (s) { const d = JSON.parse(s); db.folders = d.folders || db.folders; db.reports = d.reports || []; }
 }
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 // INIT
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   loadLocal();
   checkFirebase();
@@ -570,17 +499,12 @@ window.addEventListener('DOMContentLoaded', () => {
   renderLibrary();
 });
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 // FIREBASE
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 function checkFirebase() {
   const cfg = localStorage.getItem('fbConfig');
-  if (cfg) {
-    try { initFirebaseFromConfig(JSON.parse(cfg)); }
-    catch(e) { setFbStatus('err', '⚠ Firebase 연결 오류'); }
-  } else {
-    setFbStatus('warn', '⚙ 로컬 저장 모드 · <span style="cursor:pointer;text-decoration:underline" onclick="openModal(\'modalFirebase\')">Firebase 연결하기</span>');
-  }
+  if (cfg) { try { initFirebaseFromConfig(JSON.parse(cfg)); } catch(e) { setFbStatus('err','⚠ Firebase 연결 오류'); } }
 }
 function setFbStatus(type, msg) {
   const el = document.getElementById('firebaseStatus');
@@ -588,21 +512,19 @@ function setFbStatus(type, msg) {
   el.innerHTML = msg;
 }
 function initFirebaseFromConfig(cfg) {
-  // Dynamic import of Firebase
-  const script1 = document.createElement('script');
-  script1.type = 'module';
-  script1.textContent = `
+  const s = document.createElement('script');
+  s.type = 'module';
+  s.textContent = `
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     const app = initializeApp(${JSON.stringify(cfg)});
-    const db = getFirestore(app);
-    window._fbDB = db;
-    window._fbFns = { collection, getDocs, addDoc, deleteDoc, doc, setDoc };
+    window._fbDB = getFirestore(app);
+    window._fbFns = { collection, getDocs, addDoc, deleteDoc, doc };
     window.dispatchEvent(new Event('firebaseReady'));
   `;
-  document.head.appendChild(script1);
+  document.head.appendChild(s);
   window.addEventListener('firebaseReady', async () => {
-    setFbStatus('ok', '✓ Firebase 연결됨 · 클라우드 저장 중');
+    setFbStatus('ok','✓ Firebase 연결됨 · 클라우드 저장 중');
     await syncFromFirebase();
   });
 }
@@ -611,20 +533,17 @@ async function syncFromFirebase() {
   try {
     const { collection, getDocs } = window._fbFns;
     const snap = await getDocs(collection(window._fbDB, 'reports'));
-    const fbReports = [];
-    snap.forEach(d => fbReports.push({ id: d.id, ...d.data() }));
-    db.reports = fbReports;
-    saveLocal();
-    renderSidebar();
-    renderLibrary();
+    db.reports = [];
+    snap.forEach(d => db.reports.push({ id: d.id, ...d.data() }));
+    saveLocal(); renderSidebar(); renderLibrary();
   } catch(e) { console.warn('Firebase sync error', e); }
 }
 async function saveToFirebase(report) {
   if (!window._fbDB) return;
   try {
     const { collection, addDoc } = window._fbFns;
-    const docRef = await addDoc(collection(window._fbDB, 'reports'), report);
-    report.id = docRef.id;
+    const ref = await addDoc(collection(window._fbDB, 'reports'), report);
+    report.id = ref.id;
   } catch(e) { console.warn('Firebase save error', e); }
 }
 async function deleteFromFirebase(id) {
@@ -647,64 +566,46 @@ function connectFirebase() {
   initFirebaseFromConfig(cfg);
 }
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 // SIDEBAR
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 function renderSidebar() {
   const tree = document.getElementById('folderTree');
   const counts = {};
   db.reports.forEach(r => { counts[r.folder] = (counts[r.folder]||0)+1; });
-
   let html = `<div class="folder-item ${!db.currentFolder?'active':''}" onclick="filterFolder(null)">
     <span class="icon">📋</span> 전체 보고서 <span class="count">${db.reports.length}</span></div>`;
-
   db.folders.forEach(f => {
-    const cnt = counts[f]||0;
     html += `<div class="folder-item ${db.currentFolder===f?'active':''}" onclick="filterFolder('${f}')">
-      <span class="icon">📁</span> ${f} <span class="count">${cnt}</span></div>`;
+      <span class="icon">📁</span> ${f} <span class="count">${counts[f]||0}</span></div>`;
   });
   tree.innerHTML = html;
-
-  // Update folder select in import modal
   const sel = document.getElementById('iFolder');
-  if (sel) {
-    sel.innerHTML = db.folders.map(f=>`<option value="${f}">${f}</option>`).join('');
-  }
+  if (sel) sel.innerHTML = db.folders.map(f=>`<option value="${f}">${f}</option>`).join('');
 }
-
 function filterFolder(folder) {
   db.currentFolder = folder;
   document.getElementById('topbarTitle').textContent = folder || '전체 보고서';
-  renderSidebar();
-  renderLibrary();
+  renderSidebar(); renderLibrary();
 }
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 // LIBRARY
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 function renderLibrary() {
   showPage('pageLibrary');
   const grid = document.getElementById('reportGrid');
-  const reports = db.currentFolder
-    ? db.reports.filter(r => r.folder === db.currentFolder)
-    : db.reports;
-
+  const reports = db.currentFolder ? db.reports.filter(r=>r.folder===db.currentFolder) : db.reports;
   if (!reports.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="emoji">📭</div>
-      <h3>보고서가 없습니다</h3>
-      <p>상단 "+ 보고서 추가" 버튼으로 첫 보고서를 추가하세요.</p>
-    </div>`;
+      <div class="emoji">📭</div><h3>보고서가 없습니다</h3>
+      <p>상단 "+ 보고서 추가" 버튼으로 첫 보고서를 추가하세요.</p></div>`;
     return;
   }
-
   grid.innerHTML = reports.map(r => {
-    const k1 = r.kpis?.[0];
-    const k2 = r.kpis?.[1];
+    const k1 = r.kpis?.[0], k2 = r.kpis?.[1];
     return `<div class="report-card" onclick="openDashboard('${r.id}')">
-      <div class="rc-actions">
-        <button class="rc-btn" onclick="event.stopPropagation();deleteReport('${r.id}')">🗑</button>
-      </div>
+      <div class="rc-actions"><button class="rc-btn" onclick="event.stopPropagation();deleteReport('${r.id}')">🗑</button></div>
       <div class="rc-month">${r.folder} · ${r.period||''}</div>
       <div class="rc-title">${r.title}</div>
       <div class="rc-kpis">
@@ -716,75 +617,69 @@ function renderLibrary() {
   }).join('');
 }
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 // DASHBOARD
-// ══════════════════════════════════════════
+// ═══════════════════════════════════
 function openDashboard(id) {
-  const r = db.reports.find(x => x.id === id);
+  const r = db.reports.find(x=>x.id===id);
   if (!r) return;
   db.currentReport = r;
   showPage('pageDashboard');
   document.getElementById('dbTitle').textContent = r.title;
   document.getElementById('dbSub').textContent = `${r.folder} · ${r.period||''} · 등록일 ${r.createdAt||''}`;
-
   renderKPI(r.kpis||[], 'kpiGrid');
-  renderPipeTable(r.pipeline||[], 'pipeTbody');
+  renderPipeTable(r.pipeline||[], 'pipeTbody', false);
   renderActionTable(r.actions||[], 'actionTbody');
-  renderTrendChart('trendChart', r.trend||{}, false);
   renderProjectSummary(r.projects||[], 'projectSummary');
-
-  // reset to summary tab
-  document.querySelectorAll('.qnav-tab').forEach((t,i) => t.classList.toggle('active', i === 0));
-  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.qnav-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('.tab-view').forEach(v=>v.classList.remove('active'));
   document.getElementById('viewSummary').classList.add('active');
+  setTimeout(()=>renderTrendChart('trendChart', r.trend||{}, false), 80);
 }
-
 function goHome() { showPage('pageLibrary'); destroyCharts(); }
 
+// ═══════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════
 function deltaClass(v) {
   if (!v) return 'kd-flat';
-  if (v.includes('▲') || v.includes('+')) return 'kd-up';
-  if (v.includes('▼') || v.includes('-')) return 'kd-down';
+  if (v.includes('▲')||v.includes('+')) return 'kd-up';
+  if (v.includes('▼')||v.includes('-')) return 'kd-down';
   return 'kd-flat';
 }
 
 function renderKPI(kpis, targetId) {
-  const el = document.getElementById(targetId);
-  el.innerHTML = kpis.map(k => {
-    const mom = k.delta || '';   // 전월
-    const yoy = k.yoy || '';     // 전년 동월
-    return `<div class="kpi-card">
+  document.getElementById(targetId).innerHTML = kpis.map(k => `
+    <div class="kpi-card">
       <div class="kv" style="color:${k.color||'#14B8A6'}">${k.value}</div>
       <div class="kl">${k.name}</div>
       <div class="kd-row">
-        ${mom?`<div class="kd-item"><span class="kd-lbl">전월</span><span class="${deltaClass(mom)}">${mom}</span></div>`:''}
-        ${yoy?`<div class="kd-item"><span class="kd-lbl">전년</span><span class="${deltaClass(yoy)}">${yoy}</span></div>`:''}
+        ${k.delta?`<div class="kd-item"><span class="kd-lbl">전월</span><span class="${deltaClass(k.delta)}">${k.delta}</span></div>`:''}
+        ${k.yoy?`<div class="kd-item"><span class="kd-lbl">전년</span><span class="${deltaClass(k.yoy)}">${k.yoy}</span></div>`:''}
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
-function renderPipeTable(pipeline, tbodyId) {
-  const tbody = document.getElementById(tbodyId);
+function renderPipeTable(pipeline, tbodyId, withRatio) {
   const maxCnt = Math.max(...pipeline.map(p=>p.count||0), 1);
-  tbody.innerHTML = pipeline.map(p => {
+  document.getElementById(tbodyId).innerHTML = pipeline.map(p => {
     const pct = Math.round((p.count/maxCnt)*100);
     return `<tr>
       <td>${p.stage}</td>
       <td style="color:var(--teal2);font-weight:700">${p.count}</td>
       <td>${p.amount||'-'}</td>
-      ${tbodyId.includes('Modal') ? `<td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div></td>`:''}
+      ${withRatio?`<td><div style="background:rgba(255,255,255,.08);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--teal);border-radius:4px"></div></div></td>`:''}
     </tr>`;
   }).join('');
 }
 
 function renderActionTable(actions, tbodyId) {
-  const tbody = document.getElementById(tbodyId);
-  tbody.innerHTML = actions.map((a,i) => {
+  document.getElementById(tbodyId).innerHTML = actions.map((a,i)=>{
     const bcls = a.priority==='High'?'badge-high':a.priority==='Mid'?'badge-mid':'badge-low';
     return `<tr>
       <td style="color:var(--teal);font-weight:700">${String(i+1).padStart(2,'0')}</td>
-      <td>${a.task}</td><td style="color:var(--g1)">${a.owner||''}</td>
+      <td>${a.task}</td>
+      <td style="color:var(--g1)">${a.owner||''}</td>
       <td style="color:var(--g1)">${a.due||''}</td>
       <td><span class="badge ${bcls}">${a.priority}</span></td>
     </tr>`;
@@ -792,135 +687,383 @@ function renderActionTable(actions, tbodyId) {
 }
 
 function renderTrendChart(canvasId, trend, large) {
-  if (typeof Chart === 'undefined') return;
-  if (charts[canvasId]) { charts[canvasId].destroy(); }
+  if (typeof Chart==='undefined') return;
+  if (charts[canvasId]) { charts[canvasId].destroy(); delete charts[canvasId]; }
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !trend.months) return;
+  if (!canvas || !trend.months || !trend.months.length) return;
   charts[canvasId] = new Chart(canvas, {
-    type: 'line',
-    data: {
+    type:'line',
+    data:{
       labels: trend.months,
-      datasets: [
-        { label: '계약 건수', data: trend.counts||[], borderColor:'#14B8A6', backgroundColor:'rgba(20,184,166,.1)', tension:.4, fill:true, yAxisID:'y' },
-        { label: '금액(백만)', data: trend.amounts||[], borderColor:'#1A2B4A', backgroundColor:'rgba(26,43,74,.1)', tension:.4, fill:false, yAxisID:'y1' },
+      datasets:[
+        { label:'계약 건수', data:trend.counts||[], borderColor:'#14B8A6', backgroundColor:'rgba(20,184,166,.15)', tension:.4, fill:true, yAxisID:'y' },
+        { label:'금액(백만)', data:trend.amounts||[], borderColor:'#6366F1', backgroundColor:'rgba(99,102,241,.1)', tension:.4, fill:false, yAxisID:'y1' },
       ]
     },
-    options: {
+    options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'#94A3B8', font:{ size:11 }}}},
+      plugins:{ legend:{ labels:{ color:'#94A3B8', font:{size:11}}}},
       scales:{
-        x:{ ticks:{color:'#64748B'}, grid:{color:'rgba(255,255,255,.05)'} },
-        y:{ ticks:{color:'#64748B'}, grid:{color:'rgba(255,255,255,.05)'}, position:'left' },
-        y1:{ ticks:{color:'#64748B'}, grid:{display:false}, position:'right' }
+        x:{ticks:{color:'#64748B'},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'#64748B'},grid:{color:'rgba(255,255,255,.05)'},position:'left'},
+        y1:{ticks:{color:'#64748B'},grid:{display:false},position:'right'}
       }
     }
   });
 }
 
 function renderPipeChart(canvasId, pipeline) {
-  if (typeof Chart === 'undefined') return;
-  if (charts[canvasId]) charts[canvasId].destroy();
+  if (typeof Chart==='undefined') return;
+  if (charts[canvasId]) { charts[canvasId].destroy(); delete charts[canvasId]; }
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   charts[canvasId] = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: pipeline.map(p=>p.stage),
-      datasets: [{ label:'건수', data: pipeline.map(p=>p.count), backgroundColor:'rgba(13,148,136,.7)', borderRadius:4 }]
+    type:'bar',
+    data:{
+      labels:pipeline.map(p=>p.stage),
+      datasets:[{ label:'건수', data:pipeline.map(p=>p.count), backgroundColor:'rgba(13,148,136,.7)', borderRadius:4 }]
     },
-    options: {
+    options:{
       indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false }},
-      scales:{ x:{ticks:{color:'#64748B'},grid:{color:'rgba(255,255,255,.05)'}}, y:{ticks:{color:'#CBD5E1'},grid:{display:false}} }
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#64748B'},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#CBD5E1'},grid:{display:false}}}
     }
   });
 }
 
 function renderChannelChart(canvasId, channels) {
-  if (typeof Chart === 'undefined') return;
-  if (charts[canvasId]) charts[canvasId].destroy();
+  if (typeof Chart==='undefined') return;
+  if (charts[canvasId]) { charts[canvasId].destroy(); delete charts[canvasId]; }
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !channels) return;
+  if (!canvas||!channels||!channels.length) return;
   charts[canvasId] = new Chart(canvas, {
-    type: 'doughnut',
-    data: {
-      labels: channels.map(c=>c.name),
-      datasets: [{ data: channels.map(c=>c.value), backgroundColor:['#0D9488','#1A2B4A','#7C3AED','#F59E0B'], borderWidth:0 }]
+    type:'doughnut',
+    data:{
+      labels:channels.map(c=>c.name),
+      datasets:[{ data:channels.map(c=>c.value), backgroundColor:['#0D9488','#6366F1','#F59E0B','#EF4444','#22C55E'], borderWidth:0 }]
     },
-    options: {
+    options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ color:'#94A3B8', font:{ size:11 }, padding:12 }}}
+      plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:12}}}
     }
   });
 }
 
 function destroyCharts() {
-  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  Object.values(charts).forEach(c=>{ try{c.destroy();}catch(e){} });
   charts = {};
 }
 
-// ══════════════════════════════════════════
-// MODAL
-// ══════════════════════════════════════════
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-  const r = db.currentReport;
-  if (id === 'modalKPI' && r) renderKPI(r.kpis||[], 'kpiGridModal');
-  if (id === 'modalPipe' && r) {
-    renderPipeTable(r.pipeline||[], 'pipeTbodyModal');
-    setTimeout(() => renderPipeChart('pipeChartModal', r.pipeline||[]), 50);
-  }
-  if (id === 'modalTrend' && r) {
-    setTimeout(() => {
-      renderTrendChart('trendChartModal', r.trend||{}, true);
-      renderChannelChart('channelChartModal', r.channels||null);
-    }, 50);
-  }
-  if (id === 'modalAction' && r) renderActionTable(r.actions||[], 'actionTbodyModal');
-}
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
+// KPI detail with real delta bars
+function renderKpiDetail(r) {
+  renderKPI(r.kpis||[], 'kpiGridDetail');
+  const el = document.getElementById('kpiDeltaList');
+  const kpis = r.kpis||[];
 
-// ══════════════════════════════════════════
-// IMPORT
-// ══════════════════════════════════════════
-function openImport() {
-  renderSidebar(); // refresh folder select
-  openModal('modalImport');
+  // Extract number from delta string for bar width (0~100%)
+  function extractPct(v) {
+    if (!v) return 0;
+    const m = v.match(/([\d.]+)/);
+    if (!m) return 30;
+    const n = parseFloat(m[1]);
+    // Normalize: treat <10 as *10, cap at 100
+    return Math.min(n < 10 ? n*10 : n, 100);
+  }
+
+  const barRow = (name, v, axis) => {
+    const up   = v && (v.includes('▲')||v.includes('+'));
+    const down = v && (v.includes('▼')||v.includes('-'));
+    const color = up?'#22C55E':down?'#EF4444':'#64748B';
+    const pct = v ? extractPct(v) : 0;
+    return `<div class="delta-row">
+      <span class="delta-name">${name} <span style="color:var(--g1);font-size:11px">(${axis})</span></span>
+      <span class="delta-track"><span class="delta-fill" style="width:${pct}%;background:${color}"></span></span>
+      <span class="delta-val" style="color:${color}">${v||'-'}</span>
+    </div>`;
+  };
+
+  let html = '<h4 class="detail-sub">전월 대비 변화</h4>';
+  html += kpis.map(k=>barRow(k.name, k.delta, '전월')).join('');
+  html += '<h4 class="detail-sub" style="margin-top:20px">전년 동월 대비 변화</h4>';
+  html += kpis.map(k=>barRow(k.name, k.yoy, '전년')).join('');
+  el.innerHTML = html;
 }
+
+// 신사업 summary
+function renderProjectSummary(projects, targetId) {
+  const el = document.getElementById(targetId);
+  if (!projects||!projects.length) { el.innerHTML='<p style="color:var(--g1);font-size:13px">등록된 신사업이 없습니다.</p>'; return; }
+  const sm = {'정상':['ok','#22C55E'],'주의':['warn','#F59E0B'],'지연':['delay','#EF4444']};
+  el.innerHTML = projects.map(p=>{
+    const [sc,color] = sm[p.status]||sm['정상'];
+    return `<div class="proj-item">
+      <div class="proj-top">
+        <div><span class="proj-name">${p.name}</span><span class="proj-stage">${p.stage}</span></div>
+        <span class="proj-status ${sc}">${p.status}</span>
+      </div>
+      <div class="proj-bar-bg"><div class="proj-bar-fill" style="width:${p.progress}%;background:${color}"><span class="proj-pct">${p.progress}%</span></div></div>
+    </div>`;
+  }).join('');
+}
+
+// 신사업 detail with stage track
+function renderProjectDetail(projects) {
+  const el = document.getElementById('projectDetail');
+  if (!projects||!projects.length) { el.innerHTML='<p style="color:var(--g1)">등록된 신사업이 없습니다.</p>'; return; }
+  const sm = {'정상':['ok','#22C55E'],'주의':['warn','#F59E0B'],'지연':['delay','#EF4444']};
+  const allStages = ['기획','실행','검증','완료'];
+  el.innerHTML = projects.map(p=>{
+    const [sc,color] = sm[p.status]||sm['정상'];
+    const curIdx = allStages.indexOf(p.stage);
+    const stagesHtml = allStages.map((st,i)=>{
+      let dotCls='todo', mark=i+1;
+      if (i<curIdx){dotCls='done';mark='✓';}
+      else if(i===curIdx){dotCls='current';mark='▶';}
+      return `<div class="proj-stage-node">
+        ${i<allStages.length-1?'<div class="proj-stage-line"></div>':''}
+        <div class="proj-stage-dot ${dotCls}">${mark}</div>
+        <div class="proj-stage-label">${st}</div>
+      </div>`;
+    }).join('');
+    return `<div class="proj-detail-card">
+      <div class="proj-top">
+        <div><span class="proj-name" style="font-size:16px">${p.name}</span><span class="proj-stage">현재: ${p.stage}</span></div>
+        <span class="proj-status ${sc}">${p.status}</span>
+      </div>
+      <div class="proj-bar-bg" style="height:14px"><div class="proj-bar-fill" style="width:${p.progress}%;background:${color}"><span class="proj-pct">${p.progress}%</span></div></div>
+      <div class="proj-stages-track">${stagesHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// Action grouped
+function renderActionGrouped(actions) {
+  const el = document.getElementById('actionGrouped');
+  const groups = {High:[],Mid:[],Low:[]};
+  actions.forEach(a=>{(groups[a.priority]||groups.Mid).push(a);});
+  const cfg = {
+    High:{color:'#EF4444',label:'🔴 우선순위 High'},
+    Mid:{color:'#F59E0B',label:'🟠 우선순위 Mid'},
+    Low:{color:'#22C55E',label:'🟢 우선순위 Low'},
+  };
+  let html='';
+  ['High','Mid','Low'].forEach(p=>{
+    if(!groups[p].length) return;
+    html+=`<div class="action-group">
+      <div class="action-group-title" style="color:${cfg[p].color}">${cfg[p].label} (${groups[p].length}건)</div>
+      <table class="action-table">
+        <thead><tr><th>과제</th><th>담당</th><th>기한</th></tr></thead>
+        <tbody>${groups[p].map(a=>`<tr>
+          <td>${a.task}</td><td style="color:var(--g1)">${a.owner||''}</td><td style="color:var(--g1)">${a.due||''}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  });
+  el.innerHTML = html||'<p style="color:var(--g1)">등록된 액션이 없습니다.</p>';
+}
+
+// ═══════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════
+function switchTab(tabName, btn) {
+  document.querySelectorAll('.qnav-tab').forEach(t=>t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const map={summary:0,kpi:1,pipe:2,trend:3,project:4,action:5};
+    document.querySelectorAll('.qnav-tab')[map[tabName]]?.classList.add('active');
+  }
+  document.querySelectorAll('.tab-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view'+tabName.charAt(0).toUpperCase()+tabName.slice(1))?.classList.add('active');
+  const r = db.currentReport;
+  if (!r) return;
+  if (tabName==='summary') { setTimeout(()=>renderTrendChart('trendChart',r.trend||{},false),60); renderProjectSummary(r.projects||[],'projectSummary'); }
+  if (tabName==='kpi') renderKpiDetail(r);
+  if (tabName==='pipe') { renderPipeTable(r.pipeline||[],'pipeTbodyDetail',true); setTimeout(()=>renderPipeChart('pipeChartDetail',r.pipeline||[]),60); }
+  if (tabName==='trend') { setTimeout(()=>{ renderTrendChart('trendChartDetail',r.trend||{},true); renderChannelChart('channelChartDetail',r.channels||[]); },60); }
+  if (tabName==='project') renderProjectDetail(r.projects||[]);
+  if (tabName==='action') renderActionGrouped(r.actions||[]);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function switchTabByName(n) {
+  const map={summary:0,kpi:1,pipe:2,trend:3,project:4,action:5};
+  switchTab(n, document.querySelectorAll('.qnav-tab')[map[n]]);
+}
+
+// ═══════════════════════════════════
+// MODAL
+// ═══════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
+});
+function openImport() { renderSidebar(); openModal('modalImport'); }
 
 function switchMode(mode) {
   currentMode = mode;
-  document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['pptx','drive','manual'][i] === mode);
+  document.querySelectorAll('.mode-tab').forEach((t,i)=>{
+    t.classList.toggle('active',['pptx','drive','manual'][i]===mode);
   });
-  document.querySelectorAll('.import-panel').forEach((p,i) => {
-    p.classList.toggle('active', ['panelPptx','panelDrive','panelManual'][i] === 'panel'+mode.charAt(0).toUpperCase()+mode.slice(1));
+  ['panelPptx','panelDrive','panelManual'].forEach((pid,i)=>{
+    document.getElementById(pid).classList.toggle('active',['pptx','drive','manual'][i]===mode);
   });
 }
 
-// ── PPTX Parser
+// ═══════════════════════════════════
+// ★ 핵심 수정: @DATA 블록 파싱
+// ═══════════════════════════════════
+function inferDataFromText(rawText) {
+  const data = { kpis:[], pipeline:[], trend:{}, actions:[], channels:[], projects:[] };
+  const kpiColors = ['#14B8A6','#2563EB','#7C3AED','#EF4444'];
+
+  // ── 1순위: @DATA...@END 블록 파싱 ──
+  const blockMatch = rawText.match(/@DATA[\s\S]*?@END/);
+  if (blockMatch) {
+    const block = blockMatch[0];
+    const lines = block.split('\n').map(l=>l.trim()).filter(l=>l&&l!=='@DATA'&&l!=='@END');
+    let kpiIdx = 0;
+
+    lines.forEach(line => {
+      // KPI=항목명;값;전월대비;전년동월대비
+      if (line.startsWith('KPI=')) {
+        const parts = line.slice(4).split(';');
+        data.kpis.push({
+          name:  parts[0]?.trim() || '',
+          value: parts[1]?.trim() || '',
+          delta: parts[2]?.trim() || '',
+          yoy:   parts[3]?.trim() || '',
+          color: kpiColors[kpiIdx++ % 4]
+        });
+      }
+      // PIPE=단계명;건수;금액
+      else if (line.startsWith('PIPE=')) {
+        const parts = line.slice(5).split(';');
+        data.pipeline.push({
+          stage:  parts[0]?.trim() || '',
+          count:  parseInt(parts[1]?.trim()) || 0,
+          amount: parts[2]?.trim() || ''
+        });
+      }
+      // TREND_MONTHS=1월,2월,...
+      else if (line.startsWith('TREND_MONTHS=')) {
+        data.trend.months = line.slice(13).split(',').map(s=>s.trim()).filter(Boolean);
+      }
+      // TREND_COUNTS=3,4,5,...
+      else if (line.startsWith('TREND_COUNTS=')) {
+        data.trend.counts = line.slice(13).split(',').map(s=>parseFloat(s.trim())||0);
+      }
+      // TREND_AMOUNTS=95,130,...
+      else if (line.startsWith('TREND_AMOUNTS=')) {
+        data.trend.amounts = line.slice(14).split(',').map(s=>parseFloat(s.trim())||0);
+      }
+      // CHANNEL=채널명;비율
+      else if (line.startsWith('CHANNEL=')) {
+        const parts = line.slice(8).split(';');
+        data.channels.push({ name: parts[0]?.trim()||'', value: parseFloat(parts[1]?.trim())||0 });
+      }
+      // PROJECT=사업명;단계;진행률;상태
+      else if (line.startsWith('PROJECT=')) {
+        const parts = line.slice(8).split(';');
+        data.projects.push({
+          name:     parts[0]?.trim() || '',
+          stage:    parts[1]?.trim() || '기획',
+          progress: parseInt(parts[2]?.trim()) || 0,
+          status:   parts[3]?.trim() || '정상'
+        });
+      }
+      // ACTION=과제;담당;기한;우선순위
+      else if (line.startsWith('ACTION=')) {
+        const parts = line.slice(7).split(';');
+        data.actions.push({
+          task:     parts[0]?.trim() || '',
+          owner:    parts[1]?.trim() || '',
+          due:      parts[2]?.trim() || '',
+          priority: parts[3]?.trim() || 'Mid'
+        });
+      }
+    });
+
+    return data; // @DATA 파싱 성공 → 바로 반환
+  }
+
+  // ── 2순위: 비템플릿 PPT 폴백 (최소한의 heuristic) ──
+  const lines = rawText.split('\n').map(l=>l.trim()).filter(Boolean);
+  lines.forEach(line=>{
+    // | 구분자 액션 라인만
+    if (line.includes('|') && !line.startsWith('@')) {
+      const parts = line.split('|').map(s=>s.trim());
+      if (parts.length >= 2) {
+        const priority = ['High','Mid','Low'].includes(parts[3]) ? parts[3] : 'Mid';
+        data.actions.push({ task:parts[0], owner:parts[1]||'', due:parts[2]||'', priority });
+      }
+    }
+  });
+
+  return data;
+}
+
+// ★ 핵심 수정: populateFromData - channels, projects 누락 보완
+function populateFromData(data) {
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  set('m_k1n', data.kpis[0]?.name);  set('m_k1v', data.kpis[0]?.value);
+  set('m_k1d', data.kpis[0]?.delta); set('m_k1y', data.kpis[0]?.yoy);
+  set('m_k2n', data.kpis[1]?.name);  set('m_k2v', data.kpis[1]?.value);
+  set('m_k2d', data.kpis[1]?.delta); set('m_k2y', data.kpis[1]?.yoy);
+  set('m_k3n', data.kpis[2]?.name);  set('m_k3v', data.kpis[2]?.value);
+  set('m_k3d', data.kpis[2]?.delta); set('m_k3y', data.kpis[2]?.yoy);
+  set('m_k4n', data.kpis[3]?.name);  set('m_k4v', data.kpis[3]?.value);
+  set('m_k4d', data.kpis[3]?.delta); set('m_k4y', data.kpis[3]?.yoy);
+
+  if (data.pipeline.length) {
+    set('m_stages',  data.pipeline.map(p=>p.stage).join(', '));
+    set('m_counts',  data.pipeline.map(p=>p.count).join(', '));
+    set('m_amounts', data.pipeline.map(p=>p.amount).join(', '));
+  }
+  if (data.trend.months?.length) {
+    set('m_months',   data.trend.months.join(', '));
+    set('m_tCounts',  (data.trend.counts||[]).join(', '));
+    set('m_tAmounts', (data.trend.amounts||[]).join(', '));
+  }
+  if (data.channels?.length) {
+    set('m_channels', data.channels.map(c=>`${c.name}:${c.value}`).join(', '));
+  }
+  if (data.projects?.length) {
+    set('m_projects', data.projects.map(p=>`${p.name}|${p.stage}|${p.progress}|${p.status}`).join('\n'));
+  }
+  if (data.actions?.length) {
+    set('m_actions', data.actions.map(a=>`${a.task}|${a.owner}|${a.due}|${a.priority}`).join('\n'));
+  }
+}
+
+// ═══════════════════════════════════
+// PPTX PARSER
+// ═══════════════════════════════════
 async function parsePptx() {
   const file = document.getElementById('pptxFile').files[0];
   if (!file) { alert('.pptx 파일을 선택하세요.'); return; }
-
   const resultEl = document.getElementById('pptxParseResult');
   resultEl.style.display = 'block';
   resultEl.innerHTML = '<div class="parse-result"><h5>⏳ 파싱 중...</h5></div>';
-
   try {
-    const parsed = await extractPptxText(file);
-    const data = inferDataFromText(parsed);
+    const raw = await extractPptxText(file);
+    const data = inferDataFromText(raw);
+
+    const hasData = data.kpis.length || data.pipeline.length || data.actions.length;
+    if (!hasData) {
+      resultEl.innerHTML = `<div class="warn-box">⚠ @DATA 블록을 찾지 못했습니다. BD 보고서 빌더 스킬로 생성한 PPT인지 확인하세요. 직접 입력 모드로 전환합니다.</div>`;
+      switchMode('manual');
+      return;
+    }
+
     populateFromData(data);
     resultEl.innerHTML = `<div class="parse-result">
-      <h5>✅ 파싱 완료 — 아래 내용을 확인하고 저장하세요</h5>
-      KPI ${data.kpis.length}개 · 파이프라인 ${data.pipeline.length}단계 · 액션 ${data.actions.length}건 감지됨
+      <h5>✅ @DATA 블록 파싱 완료</h5>
+      KPI ${data.kpis.length}개 · 파이프라인 ${data.pipeline.length}단계 · 액션 ${data.actions.length}건 · 신사업 ${data.projects.length}건 감지됨<br>
+      <span style="color:var(--g1);font-size:11px">직접 입력 탭에서 내용을 확인한 뒤 저장하세요.</span>
     </div>`;
     switchMode('manual');
   } catch(e) {
-    resultEl.innerHTML = `<div class="warn-box">⚠ 파싱 실패: ${e.message}<br>직접 입력 모드로 전환하세요.</div>`;
+    resultEl.innerHTML = `<div class="warn-box">⚠ 파싱 실패: ${e.message}</div>`;
     switchMode('manual');
   }
 }
@@ -930,10 +1073,7 @@ async function extractPptxText(file) {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const arrayBuffer = e.target.result;
-        // Use JSZip-like approach via raw ZIP reading
-        // pptx is a zip — extract slide XML texts
-        const uint8 = new Uint8Array(arrayBuffer);
+        const uint8 = new Uint8Array(e.target.result);
         const text = await readPptxAsText(uint8);
         resolve(text);
       } catch(err) { reject(err); }
@@ -944,186 +1084,97 @@ async function extractPptxText(file) {
 }
 
 async function readPptxAsText(uint8) {
-  // Dynamic import JSZip via CDN
-  if (!window.JSZip) {
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-  }
+  if (!window.JSZip) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
   const zip = await window.JSZip.loadAsync(uint8);
   let allText = '';
-  const slideFiles = Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/)).sort();
+  const slideFiles = Object.keys(zip.files)
+    .filter(f=>f.match(/ppt\/slides\/slide\d+\.xml/))
+    .sort((a,b)=>{
+      const na=parseInt(a.match(/slide(\d+)/)[1]), nb=parseInt(b.match(/slide(\d+)/)[1]);
+      return na-nb;
+    });
   for (const sf of slideFiles) {
     const xml = await zip.files[sf].async('string');
-    // Extract text from <a:t> tags
-    const matches = xml.match(/<a:t[^>]*>([^<]+)<\/a:t>/g)||[];
-    const texts = matches.map(m => m.replace(/<[^>]+>/g,'').trim()).filter(Boolean);
+    const matches = xml.match(/<a:t[^>]*>([^<]*)<\/a:t>/g)||[];
+    const texts = matches.map(m=>m.replace(/<[^>]+>/g,'').trim()).filter(Boolean);
     allText += texts.join('\n') + '\n---SLIDE---\n';
   }
   return allText;
 }
 
 function loadScript(src) {
-  return new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = src; s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
-  });
+  return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
 }
 
-function inferDataFromText(rawText) {
-  const lines = rawText.split('\n').map(l=>l.trim()).filter(Boolean);
-  const data = { kpis: [], pipeline: [], trend: {}, actions: [], channels: [] };
-
-  // Simple heuristics — works well with standardized template
-  const numRe = /[\d,]+(\.\d+)?[억만건%]/;
-  const kpiColors = ['#14B8A6','#2563EB','#7C3AED','#EF4444'];
-  let kpiIdx = 0;
-
-  lines.forEach((line, i) => {
-    // KPI: lines that are short labels followed by a value
-    if (numRe.test(line) && line.length < 20 && kpiIdx < 4) {
-      const prevLine = lines[i-1]||'';
-      const deltaLine = lines[i+1]||'';
-      if (prevLine.length < 20 && !numRe.test(prevLine)) {
-        data.kpis.push({ name: prevLine||line, value: line, delta: numRe.test(deltaLine)?deltaLine:'', color: kpiColors[kpiIdx++] });
-      }
-    }
-    // Pipeline: lines with stage keywords
-    const stageKws = ['리드','미팅','제안','협상','계약','발굴','완료','검토'];
-    if (stageKws.some(k=>line.includes(k)) && /\d+/.test(line)) {
-      const nums = line.match(/\d+/g)||[];
-      data.pipeline.push({ stage: line.replace(/\d+/g,'').replace(/[건원만억]/g,'').trim(), count: parseInt(nums[0])||0, amount: nums[1]||'' });
-    }
-    // Actions: lines with | separator
-    if (line.includes('|')) {
-      const parts = line.split('|').map(s=>s.trim());
-      if (parts.length >= 2) {
-        data.actions.push({ task:parts[0], owner:parts[1]||'', due:parts[2]||'', priority:parts[3]||'Mid' });
-      }
-    }
-    // Trend months
-    if (/^\d+월$/.test(line)) {
-      if (!data.trend.months) data.trend.months = [];
-      data.trend.months.push(line);
-    }
-  });
-
-  return data;
-}
-
-function populateFromData(data) {
-  if (data.kpis[0]) {
-    document.getElementById('m_k1n').value = data.kpis[0].name||'';
-    document.getElementById('m_k1v').value = data.kpis[0].value||'';
-    document.getElementById('m_k1d').value = data.kpis[0].delta||'';
-  }
-  if (data.kpis[1]) {
-    document.getElementById('m_k2n').value = data.kpis[1].name||'';
-    document.getElementById('m_k2v').value = data.kpis[1].value||'';
-    document.getElementById('m_k2d').value = data.kpis[1].delta||'';
-  }
-  if (data.kpis[2]) {
-    document.getElementById('m_k3n').value = data.kpis[2].name||'';
-    document.getElementById('m_k3v').value = data.kpis[2].value||'';
-    document.getElementById('m_k3d').value = data.kpis[2].delta||'';
-  }
-  if (data.kpis[3]) {
-    document.getElementById('m_k4n').value = data.kpis[3].name||'';
-    document.getElementById('m_k4v').value = data.kpis[3].value||'';
-    document.getElementById('m_k4d').value = data.kpis[3].delta||'';
-  }
-  if (data.pipeline.length) {
-    document.getElementById('m_stages').value = data.pipeline.map(p=>p.stage).join(', ');
-    document.getElementById('m_counts').value = data.pipeline.map(p=>p.count).join(', ');
-    document.getElementById('m_amounts').value = data.pipeline.map(p=>p.amount).join(', ');
-  }
-  if (data.actions.length) {
-    document.getElementById('m_actions').value = data.actions.map(a=>`${a.task}|${a.owner}|${a.due}|${a.priority}`).join('\n');
-  }
-}
-
-// ── Drive Link
 async function parseDriveLink() {
   const link = document.getElementById('driveLink').value.trim();
   if (!link) { alert('링크를 입력하세요.'); return; }
-
-  const fileId = extractDriveFileId(link);
+  const fileId = (link.match(/\/d\/([a-zA-Z0-9_-]+)/)||link.match(/id=([a-zA-Z0-9_-]+)/))?.[1];
   if (!fileId) { alert('올바른 구글 드라이브 링크가 아닙니다.'); return; }
-
   const resultEl = document.getElementById('driveParseResult');
   resultEl.style.display = 'block';
   resultEl.innerHTML = '<div class="parse-result"><h5>⏳ 불러오는 중...</h5></div>';
-
   try {
-    // Direct download URL
-    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    const res = await fetch(downloadUrl);
+    const res = await fetch(`https://drive.google.com/uc?export=download&id=${fileId}`);
     if (!res.ok) throw new Error('파일을 가져올 수 없습니다. 공유 설정을 확인하세요.');
     const blob = await res.blob();
-    const file = new File([blob], 'report.pptx');
-    const parsed = await extractPptxText(file);
-    const data = inferDataFromText(parsed);
+    const raw = await extractPptxText(new File([blob],'report.pptx'));
+    const data = inferDataFromText(raw);
     populateFromData(data);
-    resultEl.innerHTML = `<div class="parse-result"><h5>✅ 불러오기 완료</h5>직접 입력 탭에서 내용을 확인 후 저장하세요.</div>`;
+    resultEl.innerHTML = `<div class="parse-result"><h5>✅ 불러오기 완료</h5>직접 입력 탭에서 확인 후 저장하세요.</div>`;
     switchMode('manual');
   } catch(e) {
-    resultEl.innerHTML = `<div class="warn-box">⚠ ${e.message}<br>파일 공유 설정: 링크가 있는 모든 사용자 → 뷰어</div>`;
+    resultEl.innerHTML = `<div class="warn-box">⚠ ${e.message}</div>`;
   }
 }
 
-function extractDriveFileId(url) {
-  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-  return m ? m[1] : null;
-}
-
-// ── SAVE
+// ═══════════════════════════════════
+// SAVE
+// ═══════════════════════════════════
 async function saveReport() {
   const title = document.getElementById('iTitle').value.trim();
-  const period = document.getElementById('iPeriod').value.trim();
-  const folder = document.getElementById('iFolder').value;
   if (!title) { alert('보고서 제목을 입력하세요.'); return; }
 
-  const kpis = [];
   const kpiColors = ['#14B8A6','#2563EB','#7C3AED','#EF4444'];
-  [[1],[2],[3],[4]].forEach(([n]) => {
-    const name = document.getElementById(`m_k${n}n`).value.trim();
+  const kpis = [1,2,3,4].map(n=>{
+    const name  = document.getElementById(`m_k${n}n`).value.trim();
     const value = document.getElementById(`m_k${n}v`).value.trim();
     const delta = document.getElementById(`m_k${n}d`).value.trim();
-    const yoy = (document.getElementById(`m_k${n}y`)||{}).value?.trim() || '';
-    if (name || value) kpis.push({ name, value, delta, yoy, color: kpiColors[n-1] });
+    const yoy   = document.getElementById(`m_k${n}y`)?.value?.trim()||'';
+    return (name||value) ? {name,value,delta,yoy,color:kpiColors[n-1]} : null;
+  }).filter(Boolean);
+
+  const splitComma = id => (document.getElementById(id)?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const stages  = splitComma('m_stages');
+  const counts  = splitComma('m_counts').map(s=>parseInt(s)||0);
+  const amounts = splitComma('m_amounts');
+  const pipeline = stages.map((s,i)=>({stage:s, count:counts[i]||0, amount:amounts[i]||''}));
+
+  const months   = splitComma('m_months');
+  const tCounts  = splitComma('m_tCounts').map(s=>parseFloat(s)||0);
+  const tAmounts = splitComma('m_tAmounts').map(s=>parseFloat(s)||0);
+  const trend    = {months, counts:tCounts, amounts:tAmounts};
+
+  const channels = splitComma('m_channels').map(pair=>{
+    const [name,val] = pair.split(':').map(x=>x.trim());
+    return {name, value:parseFloat(val)||0};
   });
 
-  const stages = (document.getElementById('m_stages').value||'').split(',').map(s=>s.trim()).filter(Boolean);
-  const counts = (document.getElementById('m_counts').value||'').split(',').map(s=>parseInt(s.trim())||0);
-  const amounts = (document.getElementById('m_amounts').value||'').split(',').map(s=>s.trim());
-  const pipeline = stages.map((s,i) => ({ stage:s, count:counts[i]||0, amount:amounts[i]||'' }));
-
-  const months = (document.getElementById('m_months').value||'').split(',').map(s=>s.trim()).filter(Boolean);
-  const tCounts = (document.getElementById('m_tCounts').value||'').split(',').map(s=>parseFloat(s)||0);
-  const tAmounts = (document.getElementById('m_tAmounts').value||'').split(',').map(s=>parseFloat(s)||0);
-  const trend = { months, counts: tCounts, amounts: tAmounts };
-
-  // channels: "인바운드:35, 아웃바운드:28"
-  const channels = (document.getElementById('m_channels').value||'').split(',').map(s=>s.trim()).filter(Boolean).map(pair => {
-    const [name, val] = pair.split(':').map(x=>x.trim());
-    return { name, value: parseFloat(val)||0 };
-  });
-
-  // projects: "사업명|단계|진행률|상태"
-  const projLines = (document.getElementById('m_projects').value||'').split('\n').filter(Boolean);
-  const projects = projLines.map(l => {
+  const projects = (document.getElementById('m_projects').value||'').split('\n').filter(Boolean).map(l=>{
     const p = l.split('|').map(s=>s.trim());
-    return { name:p[0]||'', stage:p[1]||'기획', progress:parseInt(p[2])||0, status:p[3]||'정상' };
+    return {name:p[0]||'', stage:p[1]||'기획', progress:parseInt(p[2])||0, status:p[3]||'정상'};
   });
 
-  const actionLines = (document.getElementById('m_actions').value||'').split('\n').filter(Boolean);
-  const actions = actionLines.map(l => {
+  const actions = (document.getElementById('m_actions').value||'').split('\n').filter(Boolean).map(l=>{
     const p = l.split('|').map(s=>s.trim());
-    return { task:p[0]||'', owner:p[1]||'', due:p[2]||'', priority:p[3]||'Mid' };
+    return {task:p[0]||'', owner:p[1]||'', due:p[2]||'', priority:p[3]||'Mid'};
   });
 
   const report = {
-    id: 'r_' + Date.now(),
-    title, period, folder,
+    id: 'r_'+Date.now(),
+    title,
+    period: document.getElementById('iPeriod').value.trim(),
+    folder: document.getElementById('iFolder').value,
     kpis, pipeline, trend, channels, projects, actions,
     createdAt: new Date().toLocaleDateString('ko-KR'),
   };
@@ -1140,34 +1191,25 @@ async function saveReport() {
 function resetImportForm() {
   ['iTitle','iPeriod','m_k1n','m_k1v','m_k1d','m_k1y','m_k2n','m_k2v','m_k2d','m_k2y',
    'm_k3n','m_k3v','m_k3d','m_k3y','m_k4n','m_k4v','m_k4d','m_k4y',
-   'm_stages','m_counts','m_amounts','m_months','m_tCounts','m_tAmounts','m_channels',
-   'm_projects','m_actions','driveLink'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
+   'm_stages','m_counts','m_amounts','m_months','m_tCounts','m_tAmounts',
+   'm_channels','m_projects','m_actions','driveLink'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
   });
   switchMode('pptx');
 }
 
-// ── DELETE
+// ═══════════════════════════════════
+// DELETE / FOLDER
+// ═══════════════════════════════════
 async function deleteReport(id) {
   if (!confirm('이 보고서를 삭제할까요?')) return;
   await deleteFromFirebase(id);
-  db.reports = db.reports.filter(r => r.id !== id);
-  saveLocal();
-  renderSidebar();
-  renderLibrary();
+  db.reports = db.reports.filter(r=>r.id!==id);
+  saveLocal(); renderSidebar(); renderLibrary();
 }
-
-// ══════════════════════════════════════════
-// FOLDER MANAGER
-// ══════════════════════════════════════════
-function openFolderManager() {
-  renderFolderList();
-  openModal('modalFolder');
-}
+function openFolderManager() { renderFolderList(); openModal('modalFolder'); }
 function renderFolderList() {
-  const el = document.getElementById('folderList');
-  el.innerHTML = db.folders.map((f,i) => `
+  document.getElementById('folderList').innerHTML = db.folders.map((f,i)=>`
     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)">
       <span style="flex:1;font-size:13px">📁 ${f}</span>
       <button class="rc-btn" onclick="deleteFolder(${i})">삭제</button>
@@ -1178,168 +1220,16 @@ function addFolder() {
   if (!name) return;
   if (!db.folders.includes(name)) { db.folders.push(name); saveLocal(); }
   document.getElementById('newFolderName').value = '';
-  renderFolderList();
-  renderSidebar();
+  renderFolderList(); renderSidebar();
 }
 function deleteFolder(i) {
-  if (!confirm(`"${db.folders[i]}" 폴더를 삭제할까요? (보고서는 유지됩니다)`)) return;
-  db.folders.splice(i, 1);
-  saveLocal();
-  renderFolderList();
-  renderSidebar();
+  if (!confirm(`"${db.folders[i]}" 폴더를 삭제할까요?`)) return;
+  db.folders.splice(i,1); saveLocal(); renderFolderList(); renderSidebar();
 }
 
-// ══════════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════════
 function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-}
-
-function switchTab(tabName, btn) {
-  document.querySelectorAll('.qnav-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  else {
-    const map = { summary:0, kpi:1, pipe:2, trend:3, project:4, action:5 };
-    document.querySelectorAll('.qnav-tab')[map[tabName]]?.classList.add('active');
-  }
-
-  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-  const viewId = 'view' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
-  document.getElementById(viewId)?.classList.add('active');
-
-  const r = db.currentReport;
-  if (!r) return;
-
-  // render detail content lazily
-  if (tabName === 'summary') {
-    setTimeout(() => renderTrendChart('trendChart', r.trend||{}, false), 60);
-    renderProjectSummary(r.projects||[], 'projectSummary');
-  }
-  if (tabName === 'kpi') renderKpiDetail(r);
-  if (tabName === 'pipe') {
-    renderPipeTable(r.pipeline||[], 'pipeTbodyDetail');
-    setTimeout(() => renderPipeChart('pipeChartDetail', r.pipeline||[]), 60);
-  }
-  if (tabName === 'trend') {
-    setTimeout(() => {
-      renderTrendChart('trendChartDetail', r.trend||{}, true);
-      renderChannelChart('channelChartDetail', r.channels||null);
-    }, 60);
-  }
-  if (tabName === 'project') renderProjectDetail(r.projects||[]);
-  if (tabName === 'action') renderActionGrouped(r.actions||[]);
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function switchTabByName(tabName) {
-  const map = { summary:0, kpi:1, pipe:2, trend:3, project:4, action:5 };
-  const btn = document.querySelectorAll('.qnav-tab')[map[tabName]];
-  switchTab(tabName, btn);
-}
-
-// ── KPI detail: cards + delta bars
-function renderKpiDetail(r) {
-  renderKPI(r.kpis||[], 'kpiGridDetail');
-  const el = document.getElementById('kpiDeltaList');
-  const kpis = r.kpis || [];
-
-  const barRow = (name, v, axisLabel) => {
-    const up = v && (v.includes('▲')||v.includes('+'));
-    const down = v && (v.includes('▼')||v.includes('-'));
-    const color = up ? '#22C55E' : down ? '#EF4444' : '#64748B';
-    const pct = up ? 72 : down ? 38 : 50;
-    return `<div class="delta-row">
-      <span class="delta-name">${name} <span style="color:var(--g1);font-size:11px">(${axisLabel})</span></span>
-      <span class="delta-track"><span class="delta-fill" style="width:${pct}%;background:${color}"></span></span>
-      <span class="delta-val" style="color:${color}">${v||'-'}</span>
-    </div>`;
-  };
-
-  let html = '<h4 class="detail-sub" style="text-align:left;margin-top:8px">전월 대비 변화</h4>';
-  html += kpis.map(k => barRow(k.name, k.delta, '전월')).join('');
-  html += '<h4 class="detail-sub" style="text-align:left;margin-top:20px">전년 동월 대비 변화</h4>';
-  html += kpis.map(k => barRow(k.name, k.yoy, '전년')).join('');
-  el.innerHTML = html;
-}
-
-// ── 신사업 공정 진행도 (summary)
-function renderProjectSummary(projects, targetId) {
-  const el = document.getElementById(targetId);
-  if (!projects || !projects.length) { el.innerHTML = '<p style="color:var(--g1);font-size:13px">등록된 신사업이 없습니다.</p>'; return; }
-  const statusMap = { '정상':['ok','#22C55E'], '주의':['warn','#F59E0B'], '지연':['delay','#EF4444'] };
-  el.innerHTML = projects.map(p => {
-    const [scls, scolor] = statusMap[p.status] || statusMap['정상'];
-    return `<div class="proj-item">
-      <div class="proj-top">
-        <div><span class="proj-name">${p.name}</span><span class="proj-stage">${p.stage}</span></div>
-        <span class="proj-status ${scls}">${p.status}</span>
-      </div>
-      <div class="proj-bar-bg"><div class="proj-bar-fill" style="width:${p.progress}%;background:${scolor}"><span class="proj-pct">${p.progress}%</span></div></div>
-    </div>`;
-  }).join('');
-}
-
-// ── 신사업 공정 진행도 (detail with stage track)
-function renderProjectDetail(projects) {
-  const el = document.getElementById('projectDetail');
-  if (!projects || !projects.length) { el.innerHTML = '<p style="color:var(--g1)">등록된 신사업이 없습니다.</p>'; return; }
-  const statusMap = { '정상':['ok','#22C55E'], '주의':['warn','#F59E0B'], '지연':['delay','#EF4444'] };
-  const allStages = ['기획','실행','검증','완료'];
-
-  el.innerHTML = projects.map(p => {
-    const [scls, scolor] = statusMap[p.status] || statusMap['정상'];
-    const curIdx = allStages.indexOf(p.stage);
-    const stagesHtml = allStages.map((st, i) => {
-      let dotCls = 'todo', mark = i+1;
-      if (i < curIdx) { dotCls = 'done'; mark = '✓'; }
-      else if (i === curIdx) { dotCls = 'current'; mark = '▶'; }
-      return `<div class="proj-stage-node">
-        ${i < allStages.length-1 ? '<div class="proj-stage-line"></div>' : ''}
-        <div class="proj-stage-dot ${dotCls}">${mark}</div>
-        <div class="proj-stage-label">${st}</div>
-      </div>`;
-    }).join('');
-
-    return `<div class="proj-detail-card">
-      <div class="proj-top">
-        <div><span class="proj-name" style="font-size:16px">${p.name}</span><span class="proj-stage">현재: ${p.stage}</span></div>
-        <span class="proj-status ${scls}">${p.status}</span>
-      </div>
-      <div class="proj-bar-bg" style="height:14px"><div class="proj-bar-fill" style="width:${p.progress}%;background:${scolor}"><span class="proj-pct">${p.progress}%</span></div></div>
-      <div class="proj-stages-track">${stagesHtml}</div>
-    </div>`;
-  }).join('');
-}
-
-// ── Action plan grouped by priority
-function renderActionGrouped(actions) {
-  const el = document.getElementById('actionGrouped');
-  const groups = { High: [], Mid: [], Low: [] };
-  actions.forEach(a => { (groups[a.priority] || groups.Mid).push(a); });
-
-  const cfg = {
-    High: { color: '#EF4444', label: '🔴 우선순위 High' },
-    Mid:  { color: '#F59E0B', label: '🟠 우선순위 Mid' },
-    Low:  { color: '#22C55E', label: '🟢 우선순위 Low' },
-  };
-
-  let html = '';
-  ['High','Mid','Low'].forEach(p => {
-    if (!groups[p].length) return;
-    html += `<div class="action-group">
-      <div class="action-group-title" style="color:${cfg[p].color}">${cfg[p].label} (${groups[p].length}건)</div>
-      <table class="action-table">
-        <thead><tr><th>과제</th><th>담당</th><th>기한</th></tr></thead>
-        <tbody>${groups[p].map(a=>`<tr>
-          <td>${a.task}</td><td style="color:var(--g1)">${a.owner||''}</td><td style="color:var(--g1)">${a.due||''}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`;
-  });
-  el.innerHTML = html || '<p style="color:var(--g1)">등록된 액션이 없습니다.</p>';
 }
 </script>
 </body>
